@@ -32,7 +32,10 @@ class ScenarioToolRuntime:
     not insert evidence independently. A new runtime starts a new investigation.
     """
 
-    def __init__(self, data: ScenarioData, *, reliability: float) -> None:
+    def __init__(
+        self, data: ScenarioData, *, reliability: float,
+        evidence_ledger: EvidenceLedger | None = None,
+    ) -> None:
         if type(data) is not ScenarioData:
             raise TypeError("Pass a plain ScenarioData projection to the tool runtime.")
         self._data = ScenarioData.model_validate(data.model_dump()).model_copy(deep=True)
@@ -41,7 +44,9 @@ class ScenarioToolRuntime:
         aware = [timestamp.utcoffset() is not None for timestamp in timestamps]
         if any(aware) and not all(aware):
             raise ValueError("timestamps must be uniformly timezone-aware or naive")
-        self._ledger = EvidenceLedger()
+        self._ledger = evidence_ledger if evidence_ledger is not None else EvidenceLedger()
+        if self._ledger.list_all():
+            raise ValueError("A new investigation requires an empty evidence ledger.")
         self._next_evidence_number = 1
         self._phase_result: PhaseImbalanceResult | None = None
         self._trend_results: dict[float, TemperatureTrendResult] = {}

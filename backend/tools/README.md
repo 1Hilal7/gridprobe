@@ -6,6 +6,9 @@ runtime rejects subclasses and retains a private deep copy. Pass only
 `runtime.initial_context().model_dump(mode="json")` as initial model context;
 it contains `case_id`, `panel_id`, and `initial_snapshot`.
 
+An optional `evidence_ledger=` argument accepts a caller-constructed empty
+`EvidenceLedger`. The runtime otherwise constructs its own ledger as before.
+
 The five operations validate the active panel ID. History retrieval returns a
 typed envelope with panel, sensor, requested minutes, and timestamp/value
 points for that sensor only. Windows are inclusive, end at the snapshot time,
