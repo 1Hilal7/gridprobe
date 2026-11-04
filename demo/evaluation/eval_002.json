@@ -1,0 +1,92 @@
+{
+  "case_id": "EVAL-002",
+  "panel_id": "GP-102",
+  "hidden_ground_truth": "phase_imbalance",
+  "initial_snapshot": {
+    "timestamp": "2026-11-04T09:00:00+03:00",
+    "voltage_a": 230.596,
+    "voltage_b": 230.066,
+    "voltage_c": 231.336,
+    "current_a": 26.703,
+    "current_b": 18.1,
+    "current_c": 17.827,
+    "temperature": 72.407
+  },
+  "history": [
+    {
+      "timestamp": "2026-11-04T08:00:00+03:00",
+      "voltage_a": 230.73,
+      "voltage_b": 230.4,
+      "voltage_c": 231.17,
+      "current_a": 18.177,
+      "current_b": 17.512,
+      "current_c": 17.337,
+      "temperature": 40.608
+    },
+    {
+      "timestamp": "2026-11-04T08:10:00+03:00",
+      "voltage_a": 230.441,
+      "voltage_b": 230.211,
+      "voltage_c": 230.981,
+      "current_a": 19.353,
+      "current_b": 17.61,
+      "current_c": 17.435,
+      "temperature": 43.549
+    },
+    {
+      "timestamp": "2026-11-04T08:20:00+03:00",
+      "voltage_a": 230.352,
+      "voltage_b": 230.122,
+      "voltage_c": 231.092,
+      "current_a": 21.019,
+      "current_b": 17.708,
+      "current_c": 17.533,
+      "temperature": 48.29
+    },
+    {
+      "timestamp": "2026-11-04T08:30:00+03:00",
+      "voltage_a": 230.663,
+      "voltage_b": 229.933,
+      "voltage_c": 231.403,
+      "current_a": 22.881,
+      "current_b": 17.806,
+      "current_c": 17.631,
+      "temperature": 54.419
+    },
+    {
+      "timestamp": "2026-11-04T08:40:00+03:00",
+      "voltage_a": 230.574,
+      "voltage_b": 230.044,
+      "voltage_c": 231.214,
+      "current_a": 24.645,
+      "current_b": 17.904,
+      "current_c": 17.729,
+      "temperature": 61.17
+    },
+    {
+      "timestamp": "2026-11-04T08:50:00+03:00",
+      "voltage_a": 230.485,
+      "voltage_b": 229.955,
+      "voltage_c": 231.325,
+      "current_a": 25.919,
+      "current_b": 18.002,
+      "current_c": 17.729,
+      "temperature": 67.616
+    }
+  ],
+  "maintenance_context": {
+    "last_inspection_date": "2026-10-12",
+    "known_previous_alerts": [
+      "phase_a_current_variation"
+    ],
+    "recent_maintenance_note": "Current readings were scheduled for comparison during the next inspection."
+  },
+  "optional_image": null,
+  "expected_relevant_evidence": [
+    "phase_a_current_imbalance",
+    "sustained_phase_a_current_rise",
+    "stable_other_phase_currents",
+    "stable_voltage",
+    "temperature_rise"
+  ]
+}

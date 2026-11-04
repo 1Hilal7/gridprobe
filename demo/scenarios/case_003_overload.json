@@ -1,0 +1,92 @@
+{
+  "case_id": "CASE-003",
+  "panel_id": "GP-033",
+  "hidden_ground_truth": "overload",
+  "initial_snapshot": {
+    "timestamp": "2026-11-03T09:00:00+03:00",
+    "voltage_a": 229.8,
+    "voltage_b": 229.5,
+    "voltage_c": 229.9,
+    "current_a": 31.8,
+    "current_b": 32.4,
+    "current_c": 31.5,
+    "temperature": 68.5
+  },
+  "history": [
+    {
+      "timestamp": "2026-11-03T08:00:00+03:00",
+      "voltage_a": 230.2,
+      "voltage_b": 230.0,
+      "voltage_c": 230.3,
+      "current_a": 20.0,
+      "current_b": 20.3,
+      "current_c": 19.8,
+      "temperature": 48.0
+    },
+    {
+      "timestamp": "2026-11-03T08:10:00+03:00",
+      "voltage_a": 230.1,
+      "voltage_b": 229.9,
+      "voltage_c": 230.2,
+      "current_a": 22.1,
+      "current_b": 22.5,
+      "current_c": 21.9,
+      "temperature": 50.1
+    },
+    {
+      "timestamp": "2026-11-03T08:20:00+03:00",
+      "voltage_a": 230.0,
+      "voltage_b": 229.8,
+      "voltage_c": 230.1,
+      "current_a": 24.5,
+      "current_b": 24.8,
+      "current_c": 24.1,
+      "temperature": 53.0
+    },
+    {
+      "timestamp": "2026-11-03T08:30:00+03:00",
+      "voltage_a": 229.9,
+      "voltage_b": 229.7,
+      "voltage_c": 230.0,
+      "current_a": 27.0,
+      "current_b": 27.4,
+      "current_c": 26.7,
+      "temperature": 57.0
+    },
+    {
+      "timestamp": "2026-11-03T08:40:00+03:00",
+      "voltage_a": 229.9,
+      "voltage_b": 229.6,
+      "voltage_c": 230.0,
+      "current_a": 29.3,
+      "current_b": 29.8,
+      "current_c": 29.0,
+      "temperature": 61.5
+    },
+    {
+      "timestamp": "2026-11-03T08:50:00+03:00",
+      "voltage_a": 229.8,
+      "voltage_b": 229.5,
+      "voltage_c": 229.9,
+      "current_a": 30.7,
+      "current_b": 31.2,
+      "current_c": 30.4,
+      "temperature": 65.0
+    }
+  ],
+  "maintenance_context": {
+    "last_inspection_date": "2026-10-05",
+    "known_previous_alerts": [
+      "sustained_high_load_period"
+    ],
+    "recent_maintenance_note": "Load increased after additional equipment was placed in service."
+  },
+  "optional_image": null,
+  "expected_relevant_evidence": [
+    "sustained_three_phase_current_increase",
+    "relatively_balanced_phase_currents",
+    "stable_voltage",
+    "temperature_rise",
+    "recent_load_increase"
+  ]
+}

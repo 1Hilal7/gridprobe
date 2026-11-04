@@ -1,0 +1,89 @@
+{
+  "case_id": "EVAL-008",
+  "panel_id": "GP-108",
+  "hidden_ground_truth": "normal_or_insufficient",
+  "initial_snapshot": {
+    "timestamp": "2026-11-04T09:00:00+03:00",
+    "voltage_a": 231.276,
+    "voltage_b": 231.246,
+    "voltage_c": 231.516,
+    "current_a": 17.658,
+    "current_b": 17.975,
+    "current_c": 17.798,
+    "temperature": 60.495
+  },
+  "history": [
+    {
+      "timestamp": "2026-11-04T08:00:00+03:00",
+      "voltage_a": 231.31,
+      "voltage_b": 231.18,
+      "voltage_c": 231.55,
+      "current_a": 17.559,
+      "current_b": 17.876,
+      "current_c": 17.7,
+      "temperature": 54.244
+    },
+    {
+      "timestamp": "2026-11-04T08:10:00+03:00",
+      "voltage_a": 231.221,
+      "voltage_b": 231.291,
+      "voltage_c": 231.461,
+      "current_a": 17.658,
+      "current_b": 17.876,
+      "current_c": 17.798,
+      "temperature": 54.615
+    },
+    {
+      "timestamp": "2026-11-04T08:20:00+03:00",
+      "voltage_a": 231.332,
+      "voltage_b": 231.202,
+      "voltage_c": 231.472,
+      "current_a": 17.559,
+      "current_b": 17.975,
+      "current_c": 17.7,
+      "temperature": 54.405
+    },
+    {
+      "timestamp": "2026-11-04T08:30:00+03:00",
+      "voltage_a": 231.243,
+      "voltage_b": 231.213,
+      "voltage_c": 231.583,
+      "current_a": 17.658,
+      "current_b": 17.876,
+      "current_c": 17.798,
+      "temperature": 54.696
+    },
+    {
+      "timestamp": "2026-11-04T08:40:00+03:00",
+      "voltage_a": 231.354,
+      "voltage_b": 231.324,
+      "voltage_c": 231.494,
+      "current_a": 17.658,
+      "current_b": 17.975,
+      "current_c": 17.798,
+      "temperature": 54.716
+    },
+    {
+      "timestamp": "2026-11-04T08:50:00+03:00",
+      "voltage_a": 231.265,
+      "voltage_b": 231.235,
+      "voltage_c": 231.505,
+      "current_a": 17.658,
+      "current_b": 17.876,
+      "current_c": 17.798,
+      "temperature": 54.927
+    }
+  ],
+  "maintenance_context": {
+    "last_inspection_date": "2026-10-18",
+    "known_previous_alerts": [],
+    "recent_maintenance_note": null
+  },
+  "optional_image": null,
+  "expected_relevant_evidence": [
+    "balanced_phase_currents",
+    "stable_voltage",
+    "limited_temperature_change",
+    "no_supporting_maintenance_alerts"
+  ]
+}

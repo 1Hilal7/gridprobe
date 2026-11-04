@@ -23,8 +23,7 @@ from backend.tools.models import Reliability
 from backend.tools.runtime import ScenarioToolRuntime
 
 
-# Temporary default while the replacement connection-overheating demo is prepared.
-DEFAULT_SCENARIO = DEFAULT_SCENARIO_DIRECTORY / "case_002_phase_imbalance.json"
+DEFAULT_SCENARIO = DEFAULT_SCENARIO_DIRECTORY / "case_001_connection_overheating.json"
 
 
 def _reliability(value: str) -> float:

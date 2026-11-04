@@ -1,0 +1,89 @@
+{
+  "case_id": "CASE-004",
+  "panel_id": "GP-044",
+  "hidden_ground_truth": "normal_or_insufficient",
+  "initial_snapshot": {
+    "timestamp": "2026-11-03T09:00:00+03:00",
+    "voltage_a": 230.1,
+    "voltage_b": 230.0,
+    "voltage_c": 230.2,
+    "current_a": 17.8,
+    "current_b": 18.1,
+    "current_c": 17.9,
+    "temperature": 61.0
+  },
+  "history": [
+    {
+      "timestamp": "2026-11-03T08:00:00+03:00",
+      "voltage_a": 230.2,
+      "voltage_b": 230.0,
+      "voltage_c": 230.3,
+      "current_a": 17.7,
+      "current_b": 18.0,
+      "current_c": 17.8,
+      "temperature": 54.8
+    },
+    {
+      "timestamp": "2026-11-03T08:10:00+03:00",
+      "voltage_a": 230.1,
+      "voltage_b": 230.1,
+      "voltage_c": 230.2,
+      "current_a": 17.8,
+      "current_b": 18.0,
+      "current_c": 17.9,
+      "temperature": 55.1
+    },
+    {
+      "timestamp": "2026-11-03T08:20:00+03:00",
+      "voltage_a": 230.2,
+      "voltage_b": 230.0,
+      "voltage_c": 230.2,
+      "current_a": 17.7,
+      "current_b": 18.1,
+      "current_c": 17.8,
+      "temperature": 55.0
+    },
+    {
+      "timestamp": "2026-11-03T08:30:00+03:00",
+      "voltage_a": 230.1,
+      "voltage_b": 230.0,
+      "voltage_c": 230.3,
+      "current_a": 17.8,
+      "current_b": 18.0,
+      "current_c": 17.9,
+      "temperature": 55.2
+    },
+    {
+      "timestamp": "2026-11-03T08:40:00+03:00",
+      "voltage_a": 230.2,
+      "voltage_b": 230.1,
+      "voltage_c": 230.2,
+      "current_a": 17.8,
+      "current_b": 18.1,
+      "current_c": 17.9,
+      "temperature": 55.3
+    },
+    {
+      "timestamp": "2026-11-03T08:50:00+03:00",
+      "voltage_a": 230.1,
+      "voltage_b": 230.0,
+      "voltage_c": 230.2,
+      "current_a": 17.8,
+      "current_b": 18.0,
+      "current_c": 17.9,
+      "temperature": 55.4
+    }
+  ],
+  "maintenance_context": {
+    "last_inspection_date": "2026-10-28",
+    "known_previous_alerts": [],
+    "recent_maintenance_note": "No unresolved electrical alerts recorded during the previous inspection."
+  },
+  "optional_image": null,
+  "expected_relevant_evidence": [
+    "balanced_phase_currents",
+    "stable_voltage",
+    "limited_temperature_change",
+    "no_supporting_maintenance_alerts"
+  ]
+}

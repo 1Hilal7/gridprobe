@@ -17,3 +17,13 @@ def phase_imbalance_scenario_path() -> Path:
 def phase_imbalance_case(phase_imbalance_scenario_path: Path) -> ScenarioCase:
     """Load a fresh case per test, preserving isolation when test data is mutated."""
     return load_scenario(phase_imbalance_scenario_path)
+
+
+@pytest.fixture
+def connection_overheating_scenario_path() -> Path:
+    return Path(__file__).resolve().parents[1] / "demo/scenarios/case_001_connection_overheating.json"
+
+
+@pytest.fixture
+def connection_overheating_case(connection_overheating_scenario_path: Path) -> ScenarioCase:
+    return load_scenario(connection_overheating_scenario_path)

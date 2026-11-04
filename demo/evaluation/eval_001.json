@@ -1,0 +1,92 @@
+{
+  "case_id": "EVAL-001",
+  "panel_id": "GP-101",
+  "hidden_ground_truth": "overload",
+  "initial_snapshot": {
+    "timestamp": "2026-11-04T09:00:00+03:00",
+    "voltage_a": 230.066,
+    "voltage_b": 229.836,
+    "voltage_c": 230.306,
+    "current_a": 30.562,
+    "current_b": 31.159,
+    "current_c": 30.316,
+    "temperature": 68.177
+  },
+  "history": [
+    {
+      "timestamp": "2026-11-04T08:00:00+03:00",
+      "voltage_a": 230.4,
+      "voltage_b": 230.27,
+      "voltage_c": 230.64,
+      "current_a": 19.234,
+      "current_b": 19.543,
+      "current_c": 19.084,
+      "temperature": 47.35
+    },
+    {
+      "timestamp": "2026-11-04T08:10:00+03:00",
+      "voltage_a": 230.311,
+      "voltage_b": 230.181,
+      "voltage_c": 230.551,
+      "current_a": 21.25,
+      "current_b": 21.655,
+      "current_c": 21.1,
+      "temperature": 49.551
+    },
+    {
+      "timestamp": "2026-11-04T08:20:00+03:00",
+      "voltage_a": 230.222,
+      "voltage_b": 230.092,
+      "voltage_c": 230.462,
+      "current_a": 23.554,
+      "current_b": 23.863,
+      "current_c": 23.212,
+      "temperature": 52.385
+    },
+    {
+      "timestamp": "2026-11-04T08:30:00+03:00",
+      "voltage_a": 230.133,
+      "voltage_b": 230.003,
+      "voltage_c": 230.373,
+      "current_a": 25.954,
+      "current_b": 26.359,
+      "current_c": 25.708,
+      "temperature": 56.535
+    },
+    {
+      "timestamp": "2026-11-04T08:40:00+03:00",
+      "voltage_a": 230.144,
+      "voltage_b": 229.914,
+      "voltage_c": 230.384,
+      "current_a": 28.162,
+      "current_b": 28.663,
+      "current_c": 27.916,
+      "temperature": 61.022
+    },
+    {
+      "timestamp": "2026-11-04T08:50:00+03:00",
+      "voltage_a": 230.055,
+      "voltage_b": 229.825,
+      "voltage_c": 230.295,
+      "current_a": 29.506,
+      "current_b": 30.007,
+      "current_c": 29.26,
+      "temperature": 64.685
+    }
+  ],
+  "maintenance_context": {
+    "last_inspection_date": "2026-10-11",
+    "known_previous_alerts": [
+      "periodic_load_reading_review"
+    ],
+    "recent_maintenance_note": "Additional equipment was connected during the previous production shift."
+  },
+  "optional_image": null,
+  "expected_relevant_evidence": [
+    "sustained_three_phase_current_increase",
+    "relatively_balanced_phase_currents",
+    "stable_voltage",
+    "temperature_rise",
+    "recent_load_increase"
+  ]
+}

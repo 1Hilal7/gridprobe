@@ -15,10 +15,10 @@ from backend.tools.runtime import ScenarioToolRuntime
 from scripts import run_investigation
 
 
-def test_argument_defaults_and_explicit_path(phase_imbalance_scenario_path: Path) -> None:
+def test_argument_defaults_and_explicit_path(connection_overheating_scenario_path: Path) -> None:
     default = run_investigation.parse_args([])
     assert default.scenario == run_investigation.DEFAULT_SCENARIO
-    assert default.scenario == phase_imbalance_scenario_path
+    assert default.scenario == connection_overheating_scenario_path
     assert default.reliability == 1.0
     explicit = run_investigation.parse_args(["demo/scenarios/custom.json", "--reliability", "0.8"])
     assert explicit.scenario == Path("demo/scenarios/custom.json")
@@ -33,8 +33,8 @@ def test_invalid_reliability_argument(value: str) -> None:
 
 
 @pytest.fixture
-def result(phase_imbalance_case: ScenarioCase) -> InvestigationResult:
-    data = phase_imbalance_case.to_scenario_data()
+def result(connection_overheating_case: ScenarioCase) -> InvestigationResult:
+    data = connection_overheating_case.to_scenario_data()
     runtime = ScenarioToolRuntime(data, reliability=1.0)
     runtime.calculate_phase_imbalance(data.panel_id)
     return InvestigationResult(
@@ -108,7 +108,7 @@ def test_cli_wiring_uses_projection_and_explicit_ledger(
     orchestrator_factory.return_value.investigate.assert_called_once_with()
     provider_factory.return_value.__exit__.assert_called_once()
     output = capsys.readouterr()
-    assert "INVESTIGATION CASE-002 / GP-017" in output.out
+    assert "INVESTIGATION CASE-001 / GP-021" in output.out
     assert "FINAL DIAGNOSIS" in output.out
     assert "hidden_ground_truth" not in output.out
     assert "expected_relevant_evidence" not in output.out

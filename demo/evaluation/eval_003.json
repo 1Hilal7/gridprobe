@@ -1,0 +1,89 @@
+{
+  "case_id": "EVAL-003",
+  "panel_id": "GP-103",
+  "hidden_ground_truth": "connection_related_overheating",
+  "initial_snapshot": {
+    "timestamp": "2026-11-04T09:00:00+03:00",
+    "voltage_a": 230.926,
+    "voltage_b": 230.696,
+    "voltage_c": 231.266,
+    "current_a": 18.818,
+    "current_b": 19.659,
+    "current_c": 19.064,
+    "temperature": 77.118
+  },
+  "history": [
+    {
+      "timestamp": "2026-11-04T08:00:00+03:00",
+      "voltage_a": 230.96,
+      "voltage_b": 230.73,
+      "voltage_c": 231.3,
+      "current_a": 18.51,
+      "current_b": 18.941,
+      "current_c": 18.654,
+      "temperature": 47.0
+    },
+    {
+      "timestamp": "2026-11-04T08:10:00+03:00",
+      "voltage_a": 230.871,
+      "voltage_b": 230.641,
+      "voltage_c": 231.211,
+      "current_a": 18.613,
+      "current_b": 19.044,
+      "current_c": 18.757,
+      "temperature": 49.898
+    },
+    {
+      "timestamp": "2026-11-04T08:20:00+03:00",
+      "voltage_a": 230.782,
+      "voltage_b": 230.552,
+      "voltage_c": 231.122,
+      "current_a": 18.613,
+      "current_b": 19.146,
+      "current_c": 18.757,
+      "temperature": 54.333
+    },
+    {
+      "timestamp": "2026-11-04T08:30:00+03:00",
+      "voltage_a": 230.993,
+      "voltage_b": 230.763,
+      "voltage_c": 231.333,
+      "current_a": 18.715,
+      "current_b": 19.248,
+      "current_c": 18.86,
+      "temperature": 60.18
+    },
+    {
+      "timestamp": "2026-11-04T08:40:00+03:00",
+      "voltage_a": 230.904,
+      "voltage_b": 230.674,
+      "voltage_c": 231.244,
+      "current_a": 18.715,
+      "current_b": 19.351,
+      "current_c": 18.962,
+      "temperature": 66.665
+    },
+    {
+      "timestamp": "2026-11-04T08:50:00+03:00",
+      "voltage_a": 230.915,
+      "voltage_b": 230.685,
+      "voltage_c": 231.255,
+      "current_a": 18.818,
+      "current_b": 19.453,
+      "current_c": 18.962,
+      "temperature": 72.431
+    }
+  ],
+  "maintenance_context": {
+    "last_inspection_date": "2026-10-13",
+    "known_previous_alerts": [],
+    "recent_maintenance_note": "Inspection recorded; terminal torque checks were not entered in the maintenance log."
+  },
+  "optional_image": null,
+  "expected_relevant_evidence": [
+    "sustained_temperature_rise",
+    "relatively_balanced_phase_currents",
+    "stable_voltage",
+    "localized_terminal_visual_anomaly"
+  ]
+}

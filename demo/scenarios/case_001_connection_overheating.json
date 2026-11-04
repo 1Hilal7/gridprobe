@@ -1,0 +1,89 @@
+{
+  "case_id": "CASE-001",
+  "panel_id": "GP-021",
+  "hidden_ground_truth": "connection_related_overheating",
+  "initial_snapshot": {
+    "timestamp": "2026-11-03T09:00:00+03:00",
+    "voltage_a": 230.4,
+    "voltage_b": 230.1,
+    "voltage_c": 230.6,
+    "current_a": 18.3,
+    "current_b": 19.1,
+    "current_c": 18.5,
+    "temperature": 76.8
+  },
+  "history": [
+    {
+      "timestamp": "2026-11-03T08:00:00+03:00",
+      "voltage_a": 230.5,
+      "voltage_b": 230.2,
+      "voltage_c": 230.7,
+      "current_a": 18.0,
+      "current_b": 18.4,
+      "current_c": 18.1,
+      "temperature": 47.0
+    },
+    {
+      "timestamp": "2026-11-03T08:10:00+03:00",
+      "voltage_a": 230.4,
+      "voltage_b": 230.1,
+      "voltage_c": 230.6,
+      "current_a": 18.1,
+      "current_b": 18.5,
+      "current_c": 18.2,
+      "temperature": 49.8
+    },
+    {
+      "timestamp": "2026-11-03T08:20:00+03:00",
+      "voltage_a": 230.3,
+      "voltage_b": 230.0,
+      "voltage_c": 230.5,
+      "current_a": 18.1,
+      "current_b": 18.6,
+      "current_c": 18.2,
+      "temperature": 54.3
+    },
+    {
+      "timestamp": "2026-11-03T08:30:00+03:00",
+      "voltage_a": 230.5,
+      "voltage_b": 230.2,
+      "voltage_c": 230.7,
+      "current_a": 18.2,
+      "current_b": 18.7,
+      "current_c": 18.3,
+      "temperature": 60.0
+    },
+    {
+      "timestamp": "2026-11-03T08:40:00+03:00",
+      "voltage_a": 230.4,
+      "voltage_b": 230.1,
+      "voltage_c": 230.6,
+      "current_a": 18.2,
+      "current_b": 18.8,
+      "current_c": 18.4,
+      "temperature": 66.5
+    },
+    {
+      "timestamp": "2026-11-03T08:50:00+03:00",
+      "voltage_a": 230.4,
+      "voltage_b": 230.1,
+      "voltage_c": 230.6,
+      "current_a": 18.3,
+      "current_b": 18.9,
+      "current_c": 18.4,
+      "temperature": 72.1
+    }
+  ],
+  "maintenance_context": {
+    "last_inspection_date": "2026-09-18",
+    "known_previous_alerts": [],
+    "recent_maintenance_note": "Routine inspection completed. Terminal torque verification was not documented."
+  },
+  "optional_image": "demo/assets/case_001_terminal.jpg",
+  "expected_relevant_evidence": [
+    "sustained_temperature_rise",
+    "relatively_balanced_phase_currents",
+    "stable_voltage",
+    "localized_terminal_visual_anomaly"
+  ]
+}
