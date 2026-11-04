@@ -257,8 +257,10 @@ Returns:
 
 start temperature  
 end temperature  
-absolute change  
+temperature_change (signed: end_temperature - start_temperature, in °C)\
 rate of change
+
+For example, 46°C → 78°C produces +32°C, and 78°C → 60°C produces -18°C.
 
 ### get_maintenance_context(panel_id)
 
