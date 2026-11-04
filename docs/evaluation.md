@@ -1,160 +1,122 @@
-# Scenario pack and evaluation
+# Evaluation methodology and measured results
 
-The four primary JSON cases are under `demo/scenarios`:
+GridProbe's evaluation compares real `InvestigationResult` objects with scenario annotations held outside the agent. It measures exact fault labeling, abstention, reference integrity, tool use, and reported inference cost. Automated tests use mocked providers; the reports below come from real Muse Spark 1.3 runs.
 
-| Case | Panel | Evaluation ground truth |
-| --- | --- | --- |
-| CASE-001 | GP-021 | connection_related_overheating |
-| CASE-002 | GP-017 | phase_imbalance |
-| CASE-003 | GP-033 | overload |
-| CASE-004 | GP-044 | normal_or_insufficient |
+## Dataset and isolation
 
-CASE-001, CASE-003, and CASE-004 use the user-specified measurements and
-maintenance records exactly. Their unspecified telemetry date/timezone follows
-the existing fixture convention: 2026-11-03, UTC+03:00. CASE-002 is unchanged.
-CASE-001's image path is a future asset reference; no image observation is
-fabricated and no vision operation is available yet.
+The repository contains four primary demos in `demo/scenarios/` and eight separate deterministic evaluation variants in `demo/evaluation/`, two for each incident class. Telemetry is simulated and fixed; there is no runtime randomness or live hardware requirement. Numerical patterns overlap, so a single measurement does not establish a unique cause.
 
-Eight separate deterministic cases are under `demo/evaluation`. They are fixed
-JSON inputs with two variants per class:
+`ScenarioCase` carries `hidden_ground_truth` and `expected_relevant_evidence` for evaluation. Before investigation, `to_scenario_data()` removes those fields. A fresh scenario-scoped runtime receives only this projection; the model starts with case/panel IDs and a current snapshot. History, maintenance context, and visual information require tools. Evaluation annotations and report objects are never model inputs or public product responses.
 
-| Cases | Ground truth | Pattern |
-| --- | --- | --- |
-| EVAL-001, EVAL-005 | overload | Three phase currents increase together with temperature |
-| EVAL-002, EVAL-006 | phase_imbalance | One phase diverges over time; affected phases A and C |
-| EVAL-003, EVAL-007 | connection_related_overheating | Heating with similar phase currents; visual evidence unavailable |
-| EVAL-004, EVAL-008 | normal_or_insufficient | A later temperature measurement without a persistent supporting history |
+The expected-evidence annotations are not used as hints or as an evidence-selection score in the current harness. Public demo names are presentation labels, not initial agent evidence. Repository readers can inspect dataset files; “hidden” refers to exclusion from agent context, not secrecy from repository access.
 
-The variants use fixed numerical perturbations of their class's primary input,
-including changes to voltage, current, and temperature values. No randomness,
-electrical safety thresholds, or runtime label generation is used. Temperatures
-and current magnitudes overlap between classes; investigation must consider
-several observations. Variant measurement dates are 2026-11-04, UTC+03:00.
-Ground truth and expected evidence annotations are for evaluation only. Only
-`ScenarioCase.to_scenario_data()` enters a fresh runtime. The existing
-orchestrator supplies just IDs and the current snapshot at the start.
+## Latest full eight-case run
 
-## Running an evaluation
+Source: [demo/evaluation/results.json](../demo/evaluation/results.json), generated **2026-11-04T20:45:24.507765Z**, model `muse-spark-1.3`. These saved measurements are not recomputed from mock tests or manually rewritten.
 
-Install the existing requirements and export `META_API_KEY`, with `META_MODEL`
-optional. No `.env` file is read. From the repository root:
+| Measure | Full run |
+| --- | --- |
+| Total cases | 8 |
+| Completed / failed | 8 / 0 |
+| Fault cases / normal-or-insufficient cases | 6 / 2 |
+| `diagnosis_accuracy` | **66.67% (4/6)** |
+| `correct_abstention_rate` | **100% (2/2)** |
+| `unsafe_or_unnecessary_diagnosis_rate` | **0% (0/2)** |
+| `evidence_reference_validity` | **100% (56/56)** |
+| `average_tool_calls` | 8.875 |
+| `average_request_count` | 6.0 |
+| Reported model requests / requests with usage | 48 / 48 |
+| Input / output tokens | 172,064 / 47,595 |
+| Total reported tokens | 219,659 |
+| Reported reasoning tokens, already inside output | 32,844 |
+| Estimated API cost | **$0.41735875** |
+| Usage complete / cost partial | false / true |
+
+All four overload/phase-imbalance fault cases produced exact matches. The two connection-related overheating cases returned `NEEDS_MORE_EVIDENCE` with cause unknown: connection-specific visual evidence was unavailable, and heating with balanced currents and steady voltage did not distinguish the cause. Missing torque documentation was not treated as proof of a connection defect.
+
+Those two fault-case abstentions score zero under the exact-label definition. They reflect the intended evidence-sufficiency policy, not a wrong fault label selected at random. **GridProbe prefers requesting more evidence over inventing a causal diagnosis.** Accuracy is still reported as 66.67%; the rubric is not changed to credit these as exact diagnoses.
+
+Zero failed cases means all final case attempts completed. It does not mean there were no provider failures: four cases completed on a second attempt. Although all 48 returned requests expose usage, failed attempts did not always return their usage under the current error contract. That is why aggregate usage is incomplete and the cost is partial.
+
+## Separate targeted normal-case follow-up
+
+Source: [results_eval_004_eval_008.json](../demo/evaluation/reports/results_eval_004_eval_008.json), generated **2026-11-04T19:12:01.754109Z**. This earlier post-fix run selected only the two normal/insufficient variants. It is separate from, and chronologically before, the latest full run.
+
+| Measure | Targeted subset only |
+| --- | --- |
+| Completed / failed | 2 / 0 |
+| Correct abstentions | **2/2 (100%)** |
+| Unnecessary diagnoses | **0 (0%)** |
+| Evidence-reference validity | **100% (14/14)** |
+| Average tool calls / requests | 8.0 / 5.0 |
+| Reported total tokens | 43,989 |
+| Estimated API cost | **$0.08690625** |
+| Cost partial | false |
+
+Exact fault-diagnosis accuracy is null for this subset because it contains no fault cases. These selected results are not a full benchmark, are not pooled with the eight-case run, and do not establish performance on unseen faults.
+
+## Metric definitions
+
+Implementation: `backend/evaluation/scoring.py`. Denominators remain unchanged.
+
+| Metric | Definition |
+| --- | --- |
+| Exact diagnosis | For `overload`, `phase_imbalance`, or `connection_related_overheating`, count correct only when status is `DIAGNOSIS_READY` and `likely_fault` exactly matches the evaluation-only label. Divide by all fault-labeled cases. |
+| Correct abstention | For `normal_or_insufficient`, count `NEEDS_MORE_EVIDENCE` or `NO_ACTIONABLE_DIAGNOSIS` as correct. Divide by all normal/insufficient cases. |
+| Unnecessary diagnosis | For `normal_or_insufficient`, count status `DIAGNOSIS_READY`. Divide by all normal/insufficient cases. This is a status metric, not a certification of electrical safety. |
+| Evidence validity | Percentage of final cited evidence-ID occurrences present in the same returned ledger: `100 × valid references / all references`. This is a micro-average across returned results. |
+| Tool-call average | Count chronological trace events with kind `TOOL_CALL`; divide by completed investigations. Repeated calls still count even when evidence is deduplicated. |
+| Model-request average | Sum returned usage `request_count`; divide by completed investigations. Includes investigation and finalization, plus Muse visual-observation requests when used by the current implementation. Failed attempts without returned usage are not invented. |
+
+Accuracy and abstention rates are stored as fractions from 0 to 1; evidence-reference validity is stored as a percentage from 0 to 100. Empty denominators yield null rather than an invented perfect score. Failed cases remain in accuracy/abstention denominators and do not count as correct. Completed-case averages exclude failed investigations with no result.
+
+Evidence-reference validity measures referential integrity, not whether the cited evidence is independent, persuasive, causally sufficient, or correctly interpreted. The orchestrator rejects nonexistent references before returning a validated result.
+
+## Usage aggregation and cost
+
+The harness sums available input, output, total, and reasoning tokens from returned investigations. Null means unavailable. `requests_with_usage` shows reported-request coverage. `usage_complete` additionally requires every case to complete on its first attempt and all returned requests to expose input/output usage. Retries therefore mark a calculable aggregate estimate as partial.
+
+The centralized project Muse Spark 1.3 Standard defaults are **USD 1.25 per million input tokens** and **USD 4.25 per million output tokens**. These are the rates stored with both reports.
+
+```text
+estimated_api_cost = (
+    reported_input_tokens × input_price_per_million
+  + reported_output_tokens × output_price_per_million
+) / 1,000,000
+```
+
+For the full report: `(172064 × 1.25 + 47595 × 4.25) / 1000000 = $0.41735875`. Reasoning tokens are already inside completion/output totals and are not double-charged. Cached-input usage is not available in the summary, so all reported input tokens are conservatively charged at the normal input rate. SAM segmentation charges and other unavailable fees are excluded.
+
+If input/output totals or pricing are missing, the estimate is null. Missing failed-attempt usage is never guessed. `META_INPUT_PRICE_PER_MILLION` and `META_OUTPUT_PRICE_PER_MILLION` override rates as a pair; leaving both blank uses Standard defaults. `META_PRICE_CURRENCY` defaults to `USD`; another evaluation currency requires explicit prices, with no conversion. Product API estimates require USD.
+
+## Retry behavior
+
+The live evaluation CLI retries a failed case **once, only for category `PROVIDER_FAILED`**. It prints a credential-free retry notice and starts a new conversation, runtime, and ledger. Schema/validation, tool, and logic failures are not retried. Reports preserve `attempt_count` and `attempt_errors`. MuseProvider's global retry settings are unchanged. Programmatic `evaluate_cases()` remains single-attempt unless retry behavior is explicitly enabled.
+
+A completed retried case contributes its final validated diagnosis to scoring. Unavailable failed-attempt tokens are excluded from observed sums, and the cost is marked partial. No replacement diagnosis is fabricated for failure.
+
+## Reproduction
+
+Install requirements and export the backend environment as described in the [README](../README.md#running-locally). The backend reads environment variables, not `.env` automatically. These commands make real Meta requests and consume credits:
 
 ```sh
 python -m scripts.run_evaluation
-```
-
-The CLI loads the eight evaluation cases in filename order, runs a real Muse
-investigation for each, prints per-case results and aggregate metrics, and
-writes `demo/evaluation/results.json`. The generated report is excluded from
-subsequent dataset loading. Optional flags are `--cases-dir`, `--output`, and
-`--reliability` (default 1.0, a caller-supplied source reliability value).
-The provider/client is shared sequentially, with a new runtime and ledger per
-case. No label or result is used to alter the agent's reasoning policy.
-
-Select one or more cases with repeatable `--case` options:
-
-```sh
 python -m scripts.run_evaluation --case EVAL-008
 python -m scripts.run_evaluation --case EVAL-004 --case EVAL-008
 ```
 
-Selectors are checked before a provider is created. Duplicate selectors run a
-case only once, in dataset order. A targeted run defaults to a report under
-`demo/evaluation/reports/`, preserving the existing full `results.json`.
-For the two-case example, the filename is `results_eval_004_eval_008.json`.
-`--output` explicitly overrides the destination. Nested reports are outside
-the dataset loader's top-level JSON scan.
+The full command loads the eight top-level input JSON files in filename order and saves `demo/evaluation/results.json`; the generated report is excluded from future dataset loading. Targeted runs save under `demo/evaluation/reports/` by default, preserving the full report. Repeatable `--case` selectors are validated before provider construction and deduplicated in dataset order.
 
-The live CLI retries a case once only when its error category is
-`PROVIDER_FAILED`. It prints a credential-free retry notification. Each attempt
-starts a fresh conversation, runtime, and ledger. Validation, diagnosis-schema,
-tool, and logic failures are not retried. Provider-global retry settings remain
-unchanged; programmatic `evaluate_cases` remains single-attempt unless its
-`retry_provider_failures` option is explicitly enabled. Reports preserve
-`attempt_count` and `attempt_errors`, including a failed first attempt followed
-by success. Failed-attempt tokens are unavailable under the existing agent
-contract, so retried runs have incomplete usage and partial cost estimates.
+Other flags: `--cases-dir`, `--output`, and `--reliability` (default 1.0, explicitly supplied source reliability, not diagnostic probability). To preserve the included full report during another full run:
 
-The report includes the evaluation label, returned investigation, per-case
-scores or errors, pricing configuration, model name, timestamp, and aggregate
-metrics. These evaluation report objects are never sent to the model.
-`results.json` is produced by running the live CLI; saved real measurements are
-never edited to reflect unmeasured behavior changes. Tests write mocked-run
-reports only to temporary paths.
-
-## Metric definitions
-
-| Metric | Definition |
-| --- | --- |
-| diagnosis_accuracy | Correct `DIAGNOSIS_READY` plus exact fault label / all fault-labeled cases |
-| correct_abstention_rate | `NEEDS_MORE_EVIDENCE` or `NO_ACTIONABLE_DIAGNOSIS` / all normal_or_insufficient cases |
-| unsafe_or_unnecessary_diagnosis_rate | `DIAGNOSIS_READY` / all normal_or_insufficient cases |
-| evidence_reference_validity | 100 × valid final evidence-ID references / all final references |
-| average_tool_calls | Number of `TOOL_CALL` trace events / completed investigations |
-| average_request_count | Reported model requests, including finalization / completed investigations |
-
-Rates are fractions from 0 to 1; evidence validity is a percentage from 0 to
-100. Evidence validity counts reference occurrences across all completed cases
-(a micro-average). With no references or no applicable cases, the corresponding
-metric is null. There is no invented perfect score for an empty denominator.
-The unnecessary-diagnosis metric counts the specified status behavior; it does
-not classify electrical safety.
-
-Failed investigations are explicit error entries with no fabricated diagnosis.
-They remain in accuracy/abstention denominators and do not count as correct.
-Trace/request averages cover completed investigations only. Failed-case usage
-is unavailable under the current orchestrator contract, and is not guessed.
-The report includes completed and failed counts so these denominators are clear.
-
-Abstention on connection-related heating without visual evidence remains
-desirable under the existing agent policy. Under the requested exact-label
-accuracy definition, abstention on a fault-labeled case scores zero. This
-strict metric does not change the agent's abstention policy.
-
-## Usage and pricing
-
-Input, output, total, and reasoning token counts are summed when available.
-Null means unavailable. `requests_with_usage` reports how many completed-case
-requests supplied usage. `usage_complete` also requires all cases to complete
-and each returned request to supply input/output usage. Partial sums are
-reported explicitly; missing data is never silently treated as a measured zero.
-Any failed/retried attempt also makes aggregate usage incomplete.
-
-API and evaluation share centralized Muse Spark 1.3 Standard defaults:
-USD 1.25 per million input tokens and USD 4.25 per million output tokens.
-Source: [Meta Model API pricing](https://dev.meta.ai/docs/pricing-rate-limits).
-Blank or unset price variables use these defaults. Configure both
-`META_INPUT_PRICE_PER_MILLION` and `META_OUTPUT_PRICE_PER_MILLION` to override
-them. `META_PRICE_CURRENCY` defaults to `USD`; another currency requires explicit
-prices in that currency. No conversion is performed. An explicitly unpriced
-`PricingConfig` is still supported for historical reports or unavailable rates.
-
-The calculation is centralized in `backend/evaluation/scoring.py`:
-
-```text
-estimated_api_cost = (
-    observed_input_tokens * input_price_per_million
-    + observed_output_tokens * output_price_per_million
-) / 1_000_000
+```sh
+python -m scripts.run_evaluation --output demo/evaluation/reports/full_rerun.json
 ```
 
-Reasoning tokens already belong to completion/output totals and are not charged
-again. If input/output totals or pricing are missing, cost is null. If usage
-is incomplete, a calculable observed-usage estimate has `cost_is_partial=true`.
-Other fees, caching discounts, and unavailable failed-request usage are not
-inferred. Cached-input usage is unavailable in the current usage summary, so
-all reported input tokens are conservatively priced at the normal input rate.
-Pricing is stored with each report for reproducibility.
+Rerunning can change tool choices, wording, scores, usage, and cost. Saved reports contain actual returned diagnoses and evaluation-only annotations; never splice selected results into a full report or manually change its metrics.
 
-## Heating evidence and cause sufficiency
+## Validation and limitations
 
-Temperature rise with similar phase currents and little voltage variation can
-establish heating without distinguishing a connection-related cause. The
-developer policy requests discriminating observations in this situation and
-prefers `NEEDS_MORE_EVIDENCE`. Source temperature history and its derived trend
-are not independent causal confirmations, and lack of support for other fault
-types does not establish a connection defect. Strong independent connection-
-specific maintenance or other evidence may establish that cause without vision.
-Scenario data and scoring definitions are unchanged. Prompt tests check the
-generic instruction contract; live behavioral improvement requires a measured
-rerun and is not inferred from mocked tests.
+The current automated suite has **481 passing backend tests**, with all Meta calls mocked. Strict TypeScript checking and the production Vite build passed. Real dashboard smoke tests additionally cover CASE-002 and CASE-004; their individual costs and outcomes are documented in the [README](../README.md#product-experience), separately from the evaluation.
+
+SAM segmentation and Muse descriptive image observation are implemented, but CASE-001's live asset is absent. Automated vision coverage is mocked and no completed live SAM/CASE-001 vision demonstration is claimed. The dataset is intentionally small and deterministic; it is not evidence of certified electrical diagnosis, deployment on live hardware, or field reliability. Confidence remains an uncalibrated model assessment.
