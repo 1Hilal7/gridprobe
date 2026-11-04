@@ -1,0 +1,16 @@
+"""Tests for the backend health endpoint."""
+
+from fastapi.testclient import TestClient
+
+from backend.api.main import app
+
+
+def test_health() -> None:
+    with TestClient(app) as client:
+        response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "service": "gridprobe-backend",
+    }
