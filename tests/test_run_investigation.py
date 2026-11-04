@@ -10,16 +10,15 @@ from backend.agent.contracts import DiagnosisResult
 from backend.agent.errors import AgentProviderError
 from backend.agent.models import InvestigationResult, ModelUsageSummary, TraceStep
 from backend.evidence.ledger import EvidenceLedger
-from backend.scenarios.loader import load_scenario
-from backend.scenarios.models import ScenarioData
+from backend.scenarios.models import ScenarioCase, ScenarioData
 from backend.tools.runtime import ScenarioToolRuntime
 from scripts import run_investigation
 
 
-def test_argument_defaults_and_explicit_path() -> None:
+def test_argument_defaults_and_explicit_path(phase_imbalance_scenario_path: Path) -> None:
     default = run_investigation.parse_args([])
     assert default.scenario == run_investigation.DEFAULT_SCENARIO
-    assert default.scenario.name == "case_001_connection_overheating.json"
+    assert default.scenario == phase_imbalance_scenario_path
     assert default.reliability == 1.0
     explicit = run_investigation.parse_args(["demo/scenarios/custom.json", "--reliability", "0.8"])
     assert explicit.scenario == Path("demo/scenarios/custom.json")
@@ -34,8 +33,8 @@ def test_invalid_reliability_argument(value: str) -> None:
 
 
 @pytest.fixture
-def result() -> InvestigationResult:
-    data = load_scenario(run_investigation.DEFAULT_SCENARIO).to_scenario_data()
+def result(phase_imbalance_case: ScenarioCase) -> InvestigationResult:
+    data = phase_imbalance_case.to_scenario_data()
     runtime = ScenarioToolRuntime(data, reliability=1.0)
     runtime.calculate_phase_imbalance(data.panel_id)
     return InvestigationResult(
@@ -77,8 +76,8 @@ def test_readable_output_and_secret_redaction(
         assert forbidden not in text
 
 
-def test_injected_ledger_must_be_empty(result: InvestigationResult) -> None:
-    data = load_scenario(run_investigation.DEFAULT_SCENARIO).to_scenario_data()
+def test_injected_ledger_must_be_empty(result: InvestigationResult, phase_imbalance_case: ScenarioCase) -> None:
+    data = phase_imbalance_case.to_scenario_data()
     ledger = EvidenceLedger()
     ledger.add(result.evidence[0])
     with pytest.raises(ValueError, match="empty evidence ledger"):
@@ -109,6 +108,7 @@ def test_cli_wiring_uses_projection_and_explicit_ledger(
     orchestrator_factory.return_value.investigate.assert_called_once_with()
     provider_factory.return_value.__exit__.assert_called_once()
     output = capsys.readouterr()
+    assert "INVESTIGATION CASE-002 / GP-017" in output.out
     assert "FINAL DIAGNOSIS" in output.out
     assert "hidden_ground_truth" not in output.out
     assert "expected_relevant_evidence" not in output.out
@@ -138,6 +138,9 @@ def test_provider_error_does_not_print_secret(
     factory = MagicMock(side_effect=AgentProviderError("Failure PRIVATE-TEST-CREDENTIAL"))
     monkeypatch.setattr(run_investigation, "MuseProvider", factory)
     assert run_investigation.main([]) == 1
+    factory.assert_called_once_with()
     output = capsys.readouterr()
+    assert "Cannot load scenario" not in output.err
+    assert "Investigation failed:" in output.err
     assert "PRIVATE-TEST-CREDENTIAL" not in output.err
     assert "[REDACTED]" in output.err

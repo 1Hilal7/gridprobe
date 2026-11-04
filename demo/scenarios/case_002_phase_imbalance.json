@@ -1,7 +1,7 @@
 {
-  "case_id": "CASE-001",
+  "case_id": "CASE-002",
   "panel_id": "GP-017",
-  "hidden_ground_truth": "connection_related_overheating",
+  "hidden_ground_truth": "phase_imbalance",
   "initial_snapshot": {
     "timestamp": "2026-11-03T09:00:00+03:00",
     "voltage_a": 230.2,
@@ -81,11 +81,12 @@
     ],
     "recent_maintenance_note": "Routine inspection completed. No corrective component replacement was recorded."
   },
-  "optional_image": "demo/assets/case_001_terminal.jpg",
+  "optional_image": null,
   "expected_relevant_evidence": [
     "phase_b_current_imbalance",
-    "sustained_temperature_rise",
+    "sustained_phase_b_current_rise",
+    "stable_other_phase_currents",
     "stable_voltage",
-    "localized_terminal_visual_anomaly"
+    "temperature_rise"
   ]
 }

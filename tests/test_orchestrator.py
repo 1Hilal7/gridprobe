@@ -2,7 +2,6 @@
 
 import json
 from copy import deepcopy
-from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
@@ -16,7 +15,7 @@ from backend.agent.errors import (
 )
 from backend.agent.orchestrator import MAX_AGENT_STEPS, MuseOrchestrator
 from backend.agent.prompts import GRIDPROBE_DEVELOPER_PROMPT
-from backend.scenarios.loader import load_scenario
+from backend.scenarios.models import ScenarioCase
 from backend.tools.definitions import get_tool_definitions
 from backend.tools.runtime import ScenarioToolRuntime
 
@@ -87,12 +86,8 @@ class FakeMuseProvider:
 
 
 @pytest.fixture
-def runtime() -> ScenarioToolRuntime:
-    case = load_scenario(
-        Path(__file__).resolve().parents[1]
-        / "demo/scenarios/case_001_connection_overheating.json"
-    )
-    return ScenarioToolRuntime(case.to_scenario_data(), reliability=0.8)
+def runtime(phase_imbalance_case: ScenarioCase) -> ScenarioToolRuntime:
+    return ScenarioToolRuntime(phase_imbalance_case.to_scenario_data(), reliability=0.8)
 
 
 def test_one_tool_then_separate_finalization(runtime: ScenarioToolRuntime) -> None:
@@ -103,7 +98,7 @@ def test_one_tool_then_separate_finalization(runtime: ScenarioToolRuntime) -> No
     result = MuseOrchestrator(provider, runtime).investigate()
     assert len(provider.requests) == 2
     assert len(provider.final_requests) == 1
-    assert result.case_id == "CASE-001"
+    assert result.case_id == "CASE-002"
     assert result.panel_id == "GP-017"
     assert result.diagnosis == diagnosis(["EV-001"])
     assert result.termination_reason == "NATURAL_STOP"
@@ -141,7 +136,7 @@ def test_initial_request_contains_only_initial_context(runtime: ScenarioToolRunt
     assert "optional_image" not in initial
 
 
-def test_case_001_mocked_sequential_investigation(runtime: ScenarioToolRuntime) -> None:
+def test_case_002_mocked_sequential_investigation(runtime: ScenarioToolRuntime) -> None:
     provider = FakeMuseProvider([
         response(tool_call("calculate_phase_imbalance", "phase")),
         response(tool_call("calculate_temperature_trend", "trend", {"panel_id": "GP-017", "minutes": 60})),

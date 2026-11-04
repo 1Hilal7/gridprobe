@@ -23,7 +23,8 @@ from backend.tools.models import Reliability
 from backend.tools.runtime import ScenarioToolRuntime
 
 
-DEFAULT_SCENARIO = DEFAULT_SCENARIO_DIRECTORY / "case_001_connection_overheating.json"
+# Temporary default while the replacement connection-overheating demo is prepared.
+DEFAULT_SCENARIO = DEFAULT_SCENARIO_DIRECTORY / "case_002_phase_imbalance.json"
 
 
 def _reliability(value: str) -> float:
@@ -37,7 +38,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run one real GridProbe investigation using the Meta Model API.")
     parser.add_argument(
         "scenario", nargs="?", type=Path, default=DEFAULT_SCENARIO,
-        help="scenario JSON path (default: demo/scenarios/case_001_connection_overheating.json)",
+        help=f"scenario JSON path (default: demo/scenarios/{DEFAULT_SCENARIO.name})",
     )
     parser.add_argument(
         "--reliability", type=_reliability, default=1.0,

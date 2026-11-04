@@ -1,8 +1,7 @@
-"""Controlled retrieval and deterministic analysis using the real CASE-001 file."""
+"""Controlled retrieval and deterministic analysis using the real CASE-002 fixture."""
 
 import json
 from datetime import timedelta
-from pathlib import Path
 from typing import Any, get_args
 from unittest.mock import patch
 
@@ -10,7 +9,6 @@ import pytest
 from pydantic import ValidationError
 
 from backend.evidence.models import EvidenceSource, EvidenceType
-from backend.scenarios.loader import load_scenario
 from backend.scenarios.models import ScenarioCase, ScenarioData, TelemetryHistoryPoint
 from backend.tools import electrical
 from backend.tools.models import Sensor
@@ -18,11 +16,8 @@ from backend.tools.runtime import ScenarioToolRuntime
 
 
 @pytest.fixture
-def case() -> ScenarioCase:
-    return load_scenario(
-        Path(__file__).resolve().parents[1]
-        / "demo/scenarios/case_001_connection_overheating.json"
-    )
+def case(phase_imbalance_case: ScenarioCase) -> ScenarioCase:
+    return phase_imbalance_case
 
 
 @pytest.fixture
@@ -40,7 +35,7 @@ def test_initial_context_contains_only_identifiers_and_snapshot(
 ) -> None:
     context = runtime.initial_context()
     assert set(context.model_dump()) == {"case_id", "panel_id", "initial_snapshot"}
-    assert context.case_id == "CASE-001"
+    assert context.case_id == "CASE-002"
     assert context.panel_id == "GP-017"
     assert context.initial_snapshot == data.initial_snapshot
     context.initial_snapshot.temperature = 0
@@ -228,7 +223,7 @@ def test_invalid_reliability(data: ScenarioData, reliability: Any) -> None:
         ScenarioToolRuntime(data, reliability=reliability)
 
 
-def test_case_001_end_to_end_without_evaluation_annotations(runtime: ScenarioToolRuntime) -> None:
+def test_case_002_end_to_end_without_evaluation_annotations(runtime: ScenarioToolRuntime) -> None:
     context = runtime.initial_context()
     panel_id = context.panel_id
     snapshot = runtime.get_current_snapshot(panel_id)

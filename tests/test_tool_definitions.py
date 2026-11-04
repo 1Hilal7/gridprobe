@@ -72,7 +72,7 @@ def test_definitions_are_independent_and_contain_no_scenario_annotations() -> No
     serialized = json.dumps(definitions).lower()
     for forbidden in (
         "hidden_ground_truth", "expected_relevant_evidence", "overload", "overheating",
-        "normal_or_insufficient", "case-001", "gp-017", "diagnosis", "dangerous", "faulty",
+        "normal_or_insufficient", "case-001", "case-002", "gp-017", "diagnosis", "dangerous", "faulty",
     ):
         assert forbidden not in serialized
     definitions[0]["function"]["parameters"].clear()

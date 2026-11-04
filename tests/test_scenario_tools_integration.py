@@ -1,23 +1,17 @@
-"""Exercise the real CASE-001 file through the loader and numerical tools."""
-
-from pathlib import Path
+"""Exercise the real CASE-002 fixture through the loader and numerical tools."""
 
 import pytest
 
-from backend.scenarios.loader import load_scenario
+from backend.scenarios.models import ScenarioCase
 from backend.tools.electrical import (
     calculate_phase_imbalance,
     calculate_temperature_trend,
 )
 
 
-def test_case_001_deterministic_analysis() -> None:
-    path = (
-        Path(__file__).resolve().parents[1]
-        / "demo/scenarios/case_001_connection_overheating.json"
-    )
-    case = load_scenario(path)
-    assert case.case_id == "CASE-001"
+def test_case_002_deterministic_analysis(phase_imbalance_case: ScenarioCase) -> None:
+    case = phase_imbalance_case
+    assert case.case_id == "CASE-002"
     data = case.to_scenario_data()
     snapshot = data.initial_snapshot
 

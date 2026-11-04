@@ -1,22 +1,18 @@
-"""Load CASE-001, run real tools, and preserve their observations as evidence."""
+"""Load CASE-002, run real tools, and preserve their observations as evidence."""
 
 import json
-from pathlib import Path
 
 import pytest
 
 from backend.evidence.ledger import EvidenceLedger
 from backend.evidence.models import EvidenceType
-from backend.scenarios.loader import load_scenario
+from backend.scenarios.models import ScenarioCase
 from backend.tools.runtime import ScenarioToolRuntime
 
 
-def test_case_001_evidence_ledger() -> None:
-    case = load_scenario(
-        Path(__file__).resolve().parents[1]
-        / "demo/scenarios/case_001_connection_overheating.json"
-    )
-    assert case.case_id == "CASE-001"
+def test_case_002_evidence_ledger(phase_imbalance_case: ScenarioCase) -> None:
+    case = phase_imbalance_case
+    assert case.case_id == "CASE-002"
     data = case.to_scenario_data()
     ledger = EvidenceLedger()
     # Test-provided reliability values exercise explicit caller attribution.
