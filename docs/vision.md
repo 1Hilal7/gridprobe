@@ -57,8 +57,10 @@ SAM supplies component localization only. It does not identify temperature,
 terminal torque, connection integrity, electrical safety, or fault causality.
 Muse decides which evidence to retrieve and whether the available independent
 observations distinguish a cause. A terminal box alone does not establish
-`connection_related_overheating`. Diagnosis contracts, prompt sufficiency rules,
-fault labels, deterministic formulas, and evaluation scoring remain unchanged.
+`connection_related_overheating`. Diagnosis contracts, fault labels, deterministic
+formulas, and evaluation scoring remain unchanged. The generic prompt addition
+described below clarifies how descriptive visual observations may be combined
+with other evidence.
 
 ## Assets and public output
 
@@ -74,7 +76,8 @@ an allowlisted primary-case route, never a client-supplied path. Images are
 served with `nosniff` and `no-store`. Evidence uses `component-image.<extension>`
 rather than the source filename, preventing scenario labels from leaking through
 asset names. No image bytes, evaluation annotations, credentials, or raw parser
-text enter agent context. The agent sees only requested geometry observations.
+text enter the investigation conversation. It receives only explicitly requested
+geometry and descriptive visual observations through the two tools.
 
 CASE-001's referenced asset is currently absent. No image was generated and no
 live SAM request was made during implementation. Tests mock SAM transport or the
@@ -93,3 +96,62 @@ The manual CLI intentionally accepts a user-provided local image path; the
 agent-facing runtime and public image API always enforce the demo asset boundary.
 Usage/cost fields in investigations remain Muse-only; SAM cost is not estimated
 without a configured segmentation tariff. No fabricated usage is added.
+
+## Muse visible-condition observations (C10)
+
+The separate `MuseVisualProvider` follows Meta's
+[image-understanding format](https://dev.meta.ai/docs/image-understanding).
+It calls `OpenAI.chat.completions.parse` at the existing Meta base URL, with
+fixed model `muse-spark-1.3` and `response_format=VisualObservationResult`.
+A developer message limits the task to visible properties. The USER message
+contains a text part naming the component and an `image_url` part wrapping
+`{"url": "data:image/...;base64,..."}`. No tool definitions, telemetry, scenario
+IDs, maintenance context, SAM conclusions, or ground truth enter that request.
+Image text is explicitly untrusted. Environment credentials/configuration are
+reused; META_MODEL cannot redirect the fixed vision model. The existing
+MuseProvider and SAM provider behavior are unchanged.
+
+The result has exactly component, observations (feature, description, confidence),
+and image_quality (SUFFICIENT, LIMITED, INSUFFICIENT). Unexpected fields, invalid
+confidence, refusals, unparsed text, incomplete output, and diagnostic language
+are rejected. Pydantic validation applies to the SDK response, runtime boundary,
+and converter. The text guard rejects explicit diagnostic/safety terms and causal
+phrases, including negated diagnoses. This is a lexical guard backed by strict
+instructions, not a claim of exhaustive natural-language semantic verification.
+INSUFFICIENT requires an empty observations list; it records the lack of assessable
+visual detail rather than treating it as evidence of no anomaly. LIMITED permits
+only the visible properties the model can describe. No confidence threshold
+forces a diagnosis or observation.
+
+`inspect_visual_condition` has its own component-keyed cache and the existing
+sequential evidence ID scheme. It shares C09 path and raster protections.
+Completed quality/observations become a separate VISION record with attribution
+`vision_model: muse-spark-1.3`. Existing SAM records for the same normalized
+component/image are linked in `sam_evidence_ids`. Links are captured at creation;
+calling Muse observations before SAM is permitted and leaves an empty link list.
+Neither tool runs automatically. No summaries describe electrical causes.
+
+The roles remain distinct: SAM localizes; Muse vision describes appearance;
+the GridProbe agent combines those observations with other evidence and decides
+whether to diagnose or abstain. The minimal generic prompt addition says that
+connection-specific discoloration, heat-like visible damage, deformation, or
+strong asymmetry may discriminate a cause alongside telemetry and other evidence.
+It explicitly excludes SAM geometry alone as causal evidence and prohibits
+diagnosing from a visual observation alone. There are no case-specific rules.
+
+The console labels the two record types separately. Muse observation request and
+token usage is added to the existing investigation usage summary without counting
+reasoning twice, so existing configured Muse pricing applies. SDK parsing failures
+may have no returned usage; request coverage marks this limitation rather than
+inventing tokens. SAM charges remain excluded. Injected observation providers
+should be scoped to one runtime; SDK clients may remain caller-owned.
+
+Manual live check (not executed during automated tests):
+
+```sh
+python -m scripts.check_visual_api IMAGE_PATH "electrical terminal"
+```
+
+It prints only the validated observation structure or a static, non-secret error.
+CASE-001 still requires its real image asset. No live Meta request is part of the
+automated verification, and mocked descriptions are not production observations.

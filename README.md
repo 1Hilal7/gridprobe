@@ -61,10 +61,12 @@ again. Missing usage remains unavailable; partial estimates are labeled.
 Source reliability is explicitly set to 1.0 for deterministic demo inputs,
 separate from the model's internal diagnostic confidence.
 
-Muse can request `inspect_component_image` when it needs component localization.
+Muse can request `inspect_component_image` when it needs component localization
+and `inspect_visual_condition` when it needs descriptive visible observations.
 The server calls real SAM 3.1 through the Meta Responses API and official Python
 parser, using the same `META_API_KEY`. The console overlays returned boxes and
-labels them as segmentation, separate from the diagnosis. CASE-001 references
+labels them as segmentation, separate from Muse's visible observations and the
+agent's diagnosis. The observation provider reports appearance only. CASE-001 references
 `demo/assets/case_001_terminal.jpg`; supply the real inspection image there.
 Missing images produce a structured unavailable tool result, with no invented
 observations. See [the visual integration boundary](docs/vision.md).
@@ -73,11 +75,13 @@ Manual SAM check (requires a real image and exported backend credential):
 
 ```sh
 python -m scripts.check_sam_api demo/assets/case_001_terminal.jpg "electrical terminal"
+python -m scripts.check_visual_api demo/assets/case_001_terminal.jpg "electrical terminal"
 ```
 
 The protected `GET /api/scenarios/{case_id}/image` route serves only an allowlisted
 primary case's validated raster asset. Token usage and cost shown in the console
-cover Muse requests; they exclude SAM segmentation charges.
+cover Muse investigation, finalization, and image-observation requests; they exclude
+SAM segmentation charges.
 
 Validation:
 

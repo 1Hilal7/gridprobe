@@ -3,11 +3,13 @@
 from datetime import datetime, timezone
 
 from pydantic import TypeAdapter
+from backend.agent.models import ModelUsageSummary
 
 from backend.evidence.converters import (
     maintenance_context_to_evidence, phase_imbalance_to_evidence,
     sensor_history_to_evidence, temperature_trend_to_evidence,
     visual_segmentation_to_evidence,
+    visual_observation_to_evidence,
 )
 from backend.evidence.ledger import EvidenceLedger
 from backend.scenarios.models import MaintenanceContext, ScenarioData, TelemetryHistoryPoint, TelemetrySnapshot
@@ -15,12 +17,15 @@ from backend.tools import electrical
 from backend.tools.electrical import PhaseImbalanceResult, TemperatureTrendResult
 from backend.tools.models import (
     HistoryRequest, InitialContext, PanelRequest, Reliability, Sensor,
-    SensorHistoryPoint, SensorHistoryResult, TrendRequest, VisualRequest,
+    SensorHistoryPoint, SensorHistoryResult, TrendRequest, VisualRequest, VisualConditionRequest,
 )
 from backend.vision.assets import resolve_scenario_image
 from backend.vision.errors import SamError, SamImageError, SamPathError
 from backend.vision.models import SegmentationResult, VisualToolResult
 from backend.vision.provider import SamProvider
+from backend.vision.observation_errors import VisualObservationError
+from backend.vision.observation_models import VisualConditionToolResult, VisualObservationResult
+from backend.vision.observation_provider import MuseVisualProvider
 
 
 class ScenarioToolRuntime:
@@ -45,6 +50,7 @@ class ScenarioToolRuntime:
         self, data: ScenarioData, *, reliability: float,
         evidence_ledger: EvidenceLedger | None = None,
         sam_provider: SamProvider | None = None,
+        visual_provider: MuseVisualProvider | None = None,
     ) -> None:
         if type(data) is not ScenarioData:
             raise TypeError("Pass a plain ScenarioData projection to the tool runtime.")
@@ -64,6 +70,13 @@ class ScenarioToolRuntime:
         self._maintenance_context: MaintenanceContext | None = None
         self._sam_provider = sam_provider
         self._visual_results: dict[str, VisualToolResult] = {}
+        self._visual_provider = visual_provider
+        self._condition_results: dict[str, VisualConditionToolResult] = {}
+
+    @property
+    def visual_usage(self) -> ModelUsageSummary:
+        usage = self._visual_provider.usage if self._visual_provider is not None else None
+        return usage.model_copy(deep=True) if isinstance(usage, ModelUsageSummary) else ModelUsageSummary()
 
     @property
     def evidence_ledger(self) -> EvidenceLedger:
@@ -212,4 +225,47 @@ class ScenarioToolRuntime:
             evidence_ids=[evidence_id], evidence_ids_added=[evidence_id],
         )
         self._visual_results[request.concept] = response.model_copy(deep=True)
+        return response
+
+    def inspect_visual_condition(self, panel_id: str, component: str) -> VisualConditionToolResult:
+        self._validate_panel(panel_id)
+        request = VisualConditionRequest(panel_id=panel_id, component=component)
+        if request.component in self._condition_results:
+            return self._condition_results[request.component].model_copy(deep=True, update={"evidence_ids_added": []})
+        if self._data.optional_image is None:
+            return VisualConditionToolResult(status="unavailable", component=request.component,
+                error_code="NO_SCENARIO_IMAGE", message="No image is supplied for this panel.")
+        try:
+            path = resolve_scenario_image(self._data.optional_image)
+            if self._visual_provider is None:
+                self._visual_provider = MuseVisualProvider()
+            result = self._visual_provider.observe(path, request.component)
+            result = VisualObservationResult.model_validate(result.model_dump())
+            if result.component != request.component:
+                raise ValueError("Visual component mismatch")
+        except (SamError, VisualObservationError) as error:
+            return VisualConditionToolResult(
+                status="unavailable" if isinstance(error, (SamImageError, SamPathError)) else "error",
+                component=request.component, error_code=error.code,
+                message="Visual condition observations are unavailable; request additional evidence if needed.",
+            )
+        except Exception:
+            return VisualConditionToolResult(status="error", component=request.component,
+                error_code="VISION_RESPONSE_INVALID", message="Visual condition observations could not be validated.")
+        sam = self._visual_results.get(request.component)
+        suffix = path.suffix.lower()
+        identifier = "component-image" + (suffix if suffix in {".jpg", ".jpeg", ".png", ".webp"} else "")
+        evidence_id = f"EV-{self._next_evidence_number:03d}"
+        record = visual_observation_to_evidence(
+            result, image_identifier=identifier, evidence_id=evidence_id,
+            timestamp=self._data.initial_snapshot.timestamp, reliability=self._reliability,
+            sam_evidence_ids=sam.evidence_ids if sam is not None else [],
+        )
+        self._ledger.add(record)
+        self._next_evidence_number += 1
+        response = VisualConditionToolResult(
+            status="completed", component=result.component, observations=result.observations,
+            image_quality=result.image_quality, evidence_ids=[evidence_id], evidence_ids_added=[evidence_id],
+        )
+        self._condition_results[request.component] = response.model_copy(deep=True)
         return response

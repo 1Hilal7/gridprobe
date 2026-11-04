@@ -246,6 +246,10 @@ def test_visual_dispatch_evidence_and_repeated_request(connection_overheating_ca
     assert steps[1].tool_result["evidence_ids"] == ["EV-001"]
     final_ledger = json.loads(provider.final_requests[0]["messages"][-1]["content"])["evidence_ledger"]
     assert final_ledger[0]["source"] == "VISION"
+    # A SAM record contains geometry, never a condition finding or causal result.
+    assert "observations" not in final_ledger[0]["metadata"]
+    assert "likely_fault" not in final_ledger[0]["metadata"]
+    assert result.diagnosis.status == "NEEDS_MORE_EVIDENCE"
     assert [step.step_number for step in result.trace] == list(range(1, len(result.trace) + 1))
     serialized = json.dumps([request["messages"] for request in provider.requests + provider.final_requests])
     assert "hidden_ground_truth" not in serialized and "expected_relevant_evidence" not in serialized
@@ -258,6 +262,47 @@ def test_visual_is_not_automatically_requested(connection_overheating_case) -> N
     MuseOrchestrator(FakeMuseProvider([response(content="Need additional evidence.")]), runtime).investigate()
     sam.segment.assert_not_called()
     assert runtime.evidence_ledger.export() == []
+
+
+def test_visual_condition_dispatch_usage_and_final_ledger(connection_overheating_case, tmp_path, monkeypatch) -> None:
+    from unittest.mock import MagicMock
+    from backend.agent.models import ModelUsageSummary
+    from backend.vision.observation_models import VisualObservation, VisualObservationResult
+
+    path = tmp_path / "terminal.jpg"
+    monkeypatch.setattr("backend.tools.runtime.resolve_scenario_image", lambda reference: path)
+    vision = MagicMock()
+    vision.observe.return_value = VisualObservationResult(component="electrical terminal", image_quality="SUFFICIENT",
+        observations=[VisualObservation(feature="discoloration", description="A dark patch is visible on one lug.", confidence=0.8)])
+    vision.usage = ModelUsageSummary(request_count=1, requests_with_usage=1, input_tokens=100,
+        output_tokens=20, total_tokens=120, reasoning_tokens=5)
+    runtime = ScenarioToolRuntime(connection_overheating_case.to_scenario_data(), reliability=0.8, visual_provider=vision)
+    args = {"panel_id": "GP-021", "component": "electrical terminal"}
+    provider = FakeMuseProvider([
+        response(tool_call("inspect_visual_condition", "condition", args)),
+        response(tool_call("calculate_phase_imbalance", "phase", {"panel_id": "GP-021"})),
+        response(content="Finalize using the observations."),
+    ], final_response(["EV-001", "EV-002"]))
+    result = MuseOrchestrator(provider, runtime).investigate()
+    vision.observe.assert_called_once_with(path, "electrical terminal")
+    assert result.evidence[0].tool_name == "inspect_visual_condition"
+    assert result.usage.request_count == 5 and result.usage.requests_with_usage == 5
+    assert result.usage.input_tokens == 140 and result.usage.output_tokens == 40
+    assert result.usage.total_tokens == 180 and result.usage.reasoning_tokens == 13
+    serialized = json.dumps([request["messages"] for request in provider.requests + provider.final_requests])
+    for private in ["hidden_ground_truth", "expected_relevant_evidence", "base64", str(path)]:
+        assert private not in serialized
+    initial = json.loads(provider.requests[0]["messages"][1]["content"].split("\n", 1)[1])
+    assert set(initial) == {"case_id", "panel_id", "initial_snapshot"}
+    assert result.evidence[0].metadata["sam_evidence_ids"] == []  # SAM is not a prerequisite.
+
+
+def test_condition_tool_is_not_forced(connection_overheating_case) -> None:
+    from unittest.mock import MagicMock
+    vision = MagicMock()
+    runtime = ScenarioToolRuntime(connection_overheating_case.to_scenario_data(), reliability=1.0, visual_provider=vision)
+    MuseOrchestrator(FakeMuseProvider([response(content="No tools requested.")]), runtime).investigate()
+    vision.observe.assert_not_called()
 
 
 @pytest.mark.parametrize("arguments", [

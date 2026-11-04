@@ -3,10 +3,11 @@
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, field_validator
 
 from backend.scenarios.models import TelemetrySnapshot
-from backend.vision.models import ConceptRequest
+from backend.vision.models import Concept, ConceptRequest
+from backend.vision.observation_models import normalize_component
 
 
 Sensor = Literal[
@@ -36,6 +37,15 @@ class TrendRequest(PanelRequest):
 
 class VisualRequest(PanelRequest, ConceptRequest):
     """Panel plus one component noun phrase; never a path or image URL."""
+
+
+class VisualConditionRequest(PanelRequest):
+    component: Concept
+
+    @field_validator("component")
+    @classmethod
+    def component_name(cls, value: str) -> str:
+        return normalize_component(value)
 
 
 class InitialContext(ToolModel):

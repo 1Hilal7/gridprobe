@@ -3,7 +3,7 @@
 from openai.types.chat import ChatCompletionToolParam
 from pydantic import BaseModel
 
-from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest, VisualRequest
+from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest, VisualRequest, VisualConditionRequest
 
 
 def get_tool_definitions() -> list[ChatCompletionToolParam]:
@@ -50,6 +50,14 @@ def get_tool_definitions() -> list[ChatCompletionToolParam]:
             "mask count, and evidence references only; segmentation does not establish causality. "
             "A completed zero-match is valid. If no image is available, returns a structured unavailable result.",
             VisualRequest,
+        ),
+        (
+            "inspect_visual_condition",
+            "Describe objective visible properties of a component in the supplied panel image using Muse Spark. "
+            "Use a short component noun phrase. Returns observations, observation confidence, image quality, "
+            "and evidence references, without inferring causes. Independent of SAM localization; neither "
+            "visual tool must run first. Missing images return a structured unavailable result.",
+            VisualConditionRequest,
         ),
     ]
     return [

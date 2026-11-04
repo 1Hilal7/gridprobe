@@ -11,9 +11,10 @@ with MuseProvider() as provider:
 Use a fresh runtime for each investigation. The orchestrator only reads the
 runtime's initial context, explicitly requested tool results, and ledger. Its
 initial user message contains only case/panel IDs and the telemetry snapshot.
-The existing developer prompt and DiagnosisResult contract are used unchanged.
+The existing DiagnosisResult contract is unchanged. The developer prompt includes
+the generic visual-observation boundary documented below.
 
-The six functions are allowlisted. Each batch is validated against the existing
+The seven functions are allowlisted. Each batch is validated against the existing
 request models before any operation runs. Invalid JSON, duplicate JSON keys,
 unknown tools, invalid arguments, and reused tool-call IDs are rejected. Batched
 tools execute sequentially in response order, with one matching tool message
@@ -43,7 +44,8 @@ Tool results carry the runtime-generated evidence IDs added by that call.
 Finalization and investigation events are distinguished by `phase`.
 
 Usage sums available SDK input/output/total/reasoning token counts over both
-phases. Null totals mean unavailable, and `requests_with_usage` reports coverage.
+phases and descriptive Muse vision requests. Null totals mean unavailable, and
+`requests_with_usage` reports coverage.
 Reasoning tokens are not double-counted in total tokens. No costs are estimated.
 Provider/runtime ownership remains with the caller. Tests use scripted providers;
 they never perform real Meta requests.
@@ -52,5 +54,14 @@ The sixth function, `inspect_component_image`, is selected by Muse like the
 other tools. No code forces image inspection. Its result contains geometry
 and evidence references, or a structured unavailable/error response so the
 investigation can continue. SAM localizes components; it does not establish a
-connection-specific cause. The developer prompt and diagnosis contract are
-unchanged. Reported model usage covers Muse calls, not SAM segmentation.
+connection-specific cause. Reported model usage covers Muse calls, not SAM segmentation.
+
+`inspect_visual_condition` is the seventh tool. It independently requests a
+structured descriptive observation from Muse Spark's image understanding layer.
+Only the image and requested component are sent to that provider; no telemetry,
+scenario identity, evaluation annotations, or candidate diagnosis is supplied.
+Visible connection-specific observations can help distinguish causes when
+combined with telemetry and other evidence. SAM geometry alone is not causal
+evidence. Neither visual tool is forced or required to precede the other.
+Usage totals include the descriptive Muse vision requests, including requests
+whose output is rejected. Unavailable usage remains unavailable/partial.

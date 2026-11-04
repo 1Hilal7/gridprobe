@@ -40,3 +40,11 @@ def test_existing_overload_and_phase_imbalance_instructions_remain() -> None:
     assert "phase imbalance alone does not prove a connection fault" in prompt
     assert "Never calculate phase imbalance yourself when the calculate_phase_imbalance tool is available" in prompt
     assert "Use deterministic tools whenever a numerical fact can be calculated or retrieved" in prompt
+
+
+def test_visual_observations_are_distinct_from_sam_geometry() -> None:
+    prompt = " ".join(GRIDPROBE_DEVELOPER_PROMPT.split())
+    assert "SAM geometry alone is not causal evidence" in prompt
+    assert "Objective connection-specific visual observations" in prompt
+    assert "when combined with telemetry and other evidence" in prompt
+    assert "do not diagnose from segmentation or a visual observation alone" in prompt

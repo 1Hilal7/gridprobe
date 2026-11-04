@@ -7,6 +7,7 @@ from backend.scenarios.models import MaintenanceContext
 from backend.tools.electrical import PhaseImbalanceResult, TemperatureTrendResult
 from backend.tools.models import Sensor, SensorHistoryResult
 from backend.vision.models import SegmentationResult
+from backend.vision.observation_models import VISION_MODEL, VisualObservationResult
 
 
 def phase_imbalance_to_evidence(
@@ -146,4 +147,21 @@ def visual_segmentation_to_evidence(
             "image_width": result.image_width, "image_height": result.image_height,
             "coordinate_system": "source_image_pixels_half_open",
         },
+    )
+
+
+def visual_observation_to_evidence(
+    result: VisualObservationResult, *, image_identifier: str, evidence_id: str,
+    timestamp: datetime, reliability: float, sam_evidence_ids: list[str],
+) -> EvidenceRecord:
+    """Preserve descriptive observations and quality; never infer a cause."""
+    result = VisualObservationResult.model_validate(result.model_dump())
+    summary = " ".join(observation.description for observation in result.observations)
+    return EvidenceRecord(
+        id=evidence_id, source=EvidenceSource.VISION,
+        type=EvidenceType.VISUAL_COMPONENT_OBSERVATION, timestamp=timestamp,
+        summary=summary or "Image quality does not provide recorded component condition observations.",
+        value=None, unit=None, tool_name="inspect_visual_condition", reliability=reliability,
+        metadata={**result.model_dump(mode="json"), "vision_model": VISION_MODEL,
+                  "image_identifier": image_identifier, "sam_evidence_ids": list(sam_evidence_ids)},
     )

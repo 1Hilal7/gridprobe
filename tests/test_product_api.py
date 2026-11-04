@@ -117,6 +117,28 @@ def test_visual_investigation_serialization(client, provider_factory, monkeypatc
     assert client.get("/api/scenarios/CASE-001/image").status_code == 200
 
 
+def test_visual_condition_public_output(client, provider_factory, monkeypatch, tmp_path) -> None:
+    from backend.vision.observation_models import VisualObservation, VisualObservationResult
+    monkeypatch.setattr("backend.tools.runtime.resolve_scenario_image", lambda reference: tmp_path / "terminal.jpg")
+    vision = MagicMock()
+    vision.observe.return_value = VisualObservationResult(component="electrical terminal", image_quality="LIMITED",
+        observations=[VisualObservation(feature="dark material", description="Dark material is visible on one lug.", confidence=0.7)])
+    monkeypatch.setattr("backend.tools.runtime.MuseVisualProvider", lambda: vision)
+    provider = provider_factory.return_value.__enter__.return_value
+    provider.chat_completion.side_effect = [completion(calls=[{
+        "id": "condition", "type": "function", "function": {
+            "name": "inspect_visual_condition", "arguments": json.dumps({"panel_id": "GP-021", "component": "electrical terminal"}),
+        },
+    }]), completion(content="Done")]
+    response = client.post("/api/investigations", json={"case_id": "CASE-001"})
+    assert response.status_code == 200, response.text
+    evidence = response.json()["evidence"][0]
+    assert evidence["metadata"]["vision_model"] == "muse-spark-1.3"
+    assert evidence["metadata"]["image_quality"] == "LIMITED"
+    assert "hidden_ground_truth" not in response.text and "expected_relevant_evidence" not in response.text
+    assert "PRIVATE-API-TEST-KEY" not in response.text
+
+
 @pytest.mark.parametrize("case_id", ["CASE-001", "CASE-002", "CASE-003", "CASE-004"])
 def test_mocked_investigation_uses_real_agent_and_serializes_public_result(
     client: TestClient, provider_factory: MagicMock, case_id: str,

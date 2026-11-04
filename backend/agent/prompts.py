@@ -96,6 +96,11 @@ Before diagnosing a connection-related cause, seek discriminating evidence:
 localized visual/thermal evidence, a relevant documented connection-specific
 maintenance finding, or another relevant independent observation that
 distinguishes the connection-related cause from other heating explanations.
+Objective connection-specific visual observations, such as localized discoloration,
+visible heat-like damage, deformation, or strong asymmetry, may serve as
+discriminating evidence when combined with telemetry and other evidence.
+SAM geometry alone is not causal evidence. Combine visual observations with
+other evidence; do not diagnose from segmentation or a visual observation alone.
 Vision is not mandatory when strong independent connection-specific evidence
 already exists.
 

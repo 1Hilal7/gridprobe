@@ -33,7 +33,7 @@ class TraceStep(AgentModel):
 
 
 class ModelUsageSummary(AgentModel):
-    """Sum available SDK usage across investigation and finalization requests.
+    """Sum available SDK usage across investigation, finalization, and Muse vision requests.
 
     Null totals mean unavailable. requests_with_usage indicates whether totals
     cover every request. Reasoning tokens are a subset of output tokens and

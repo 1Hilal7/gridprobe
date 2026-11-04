@@ -19,7 +19,7 @@ from backend.agent.errors import (
 from backend.agent.models import AgentErrorInfo, InvestigationResult, ModelUsageSummary, TraceStep
 from backend.agent.prompts import GRIDPROBE_DEVELOPER_PROMPT
 from backend.tools.definitions import get_tool_definitions
-from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest, VisualRequest
+from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest, VisualRequest, VisualConditionRequest
 from backend.tools.runtime import ScenarioToolRuntime
 
 
@@ -48,6 +48,7 @@ _REQUEST_MODELS: dict[str, type[BaseModel]] = {
     "calculate_temperature_trend": TrendRequest,
     "get_maintenance_context": PanelRequest,
     "inspect_component_image": VisualRequest,
+    "inspect_visual_condition": VisualConditionRequest,
 }
 
 
@@ -177,6 +178,13 @@ class MuseOrchestrator:
             ))
 
         diagnosis = self._finalize(conversation, trace, usage, limit_error is not None)
+        visual_usage = self._runtime.visual_usage
+        usage.request_count += visual_usage.request_count
+        usage.requests_with_usage += visual_usage.requests_with_usage
+        for field in ("input_tokens", "output_tokens", "total_tokens", "reasoning_tokens"):
+            value = getattr(visual_usage, field)
+            if value is not None:
+                setattr(usage, field, (getattr(usage, field) or 0) + value)
         return InvestigationResult(
             case_id=context.case_id, panel_id=context.panel_id, trace=trace,
             evidence=self._runtime.evidence_ledger.list_all(), diagnosis=diagnosis, usage=usage,
@@ -194,6 +202,7 @@ class MuseOrchestrator:
             "calculate_temperature_trend": self._runtime.calculate_temperature_trend,
             "get_maintenance_context": self._runtime.get_maintenance_context,
             "inspect_component_image": self._runtime.inspect_component_image,
+            "inspect_visual_condition": self._runtime.inspect_visual_condition,
         }
         arguments = request.model_dump(mode="json")
         trace.append(TraceStep(
