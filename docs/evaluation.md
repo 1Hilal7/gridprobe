@@ -51,11 +51,36 @@ subsequent dataset loading. Optional flags are `--cases-dir`, `--output`, and
 The provider/client is shared sequentially, with a new runtime and ledger per
 case. No label or result is used to alter the agent's reasoning policy.
 
+Select one or more cases with repeatable `--case` options:
+
+```sh
+python -m scripts.run_evaluation --case EVAL-008
+python -m scripts.run_evaluation --case EVAL-004 --case EVAL-008
+```
+
+Selectors are checked before a provider is created. Duplicate selectors run a
+case only once, in dataset order. A targeted run defaults to a report under
+`demo/evaluation/reports/`, preserving the existing full `results.json`.
+For the two-case example, the filename is `results_eval_004_eval_008.json`.
+`--output` explicitly overrides the destination. Nested reports are outside
+the dataset loader's top-level JSON scan.
+
+The live CLI retries a case once only when its error category is
+`PROVIDER_FAILED`. It prints a credential-free retry notification. Each attempt
+starts a fresh conversation, runtime, and ledger. Validation, diagnosis-schema,
+tool, and logic failures are not retried. Provider-global retry settings remain
+unchanged; programmatic `evaluate_cases` remains single-attempt unless its
+`retry_provider_failures` option is explicitly enabled. Reports preserve
+`attempt_count` and `attempt_errors`, including a failed first attempt followed
+by success. Failed-attempt tokens are unavailable under the existing agent
+contract, so retried runs have incomplete usage and partial cost estimates.
+
 The report includes the evaluation label, returned investigation, per-case
 scores or errors, pricing configuration, model name, timestamp, and aggregate
-metrics. These evaluation report objects are never sent to the model. No live
-metrics are committed as part of this foundation; `results.json` is produced
-by running the live CLI. Tests write mocked-run reports only to temporary paths.
+metrics. These evaluation report objects are never sent to the model.
+`results.json` is produced by running the live CLI; saved real measurements are
+never edited to reflect unmeasured behavior changes. Tests write mocked-run
+reports only to temporary paths.
 
 ## Metric definitions
 
@@ -93,13 +118,16 @@ Null means unavailable. `requests_with_usage` reports how many completed-case
 requests supplied usage. `usage_complete` also requires all cases to complete
 and each returned request to supply input/output usage. Partial sums are
 reported explicitly; missing data is never silently treated as a measured zero.
+Any failed/retried attempt also makes aggregate usage incomplete.
 
-No token prices existed in the project at implementation time. Configure both
-`META_INPUT_PRICE_PER_MILLION` and `META_OUTPUT_PRICE_PER_MILLION` using the
-prices applicable to your account and model. `META_PRICE_CURRENCY` defaults to
-`USD`; it labels the configured amounts and performs no currency conversion.
-Leave both prices unset for an unavailable cost estimate. There are no inferred
-published prices or claims that an unpriced request is free.
+API and evaluation share centralized Muse Spark 1.3 Standard defaults:
+USD 1.25 per million input tokens and USD 4.25 per million output tokens.
+Source: [Meta Model API pricing](https://dev.meta.ai/docs/pricing-rate-limits).
+Blank or unset price variables use these defaults. Configure both
+`META_INPUT_PRICE_PER_MILLION` and `META_OUTPUT_PRICE_PER_MILLION` to override
+them. `META_PRICE_CURRENCY` defaults to `USD`; another currency requires explicit
+prices in that currency. No conversion is performed. An explicitly unpriced
+`PricingConfig` is still supported for historical reports or unavailable rates.
 
 The calculation is centralized in `backend/evaluation/scoring.py`:
 
@@ -114,4 +142,19 @@ Reasoning tokens already belong to completion/output totals and are not charged
 again. If input/output totals or pricing are missing, cost is null. If usage
 is incomplete, a calculable observed-usage estimate has `cost_is_partial=true`.
 Other fees, caching discounts, and unavailable failed-request usage are not
-inferred. Pricing is stored with each report for reproducibility.
+inferred. Cached-input usage is unavailable in the current usage summary, so
+all reported input tokens are conservatively priced at the normal input rate.
+Pricing is stored with each report for reproducibility.
+
+## Heating evidence and cause sufficiency
+
+Temperature rise with similar phase currents and little voltage variation can
+establish heating without distinguishing a connection-related cause. The
+developer policy requests discriminating observations in this situation and
+prefers `NEEDS_MORE_EVIDENCE`. Source temperature history and its derived trend
+are not independent causal confirmations, and lack of support for other fault
+types does not establish a connection defect. Strong independent connection-
+specific maintenance or other evidence may establish that cause without vision.
+Scenario data and scoring definitions are unchanged. Prompt tests check the
+generic instruction contract; live behavioral improvement requires a measured
+rerun and is not inferred from mocked tests.

@@ -31,6 +31,8 @@ class CaseEvaluation(ReportModel):
     valid_evidence_references: int = 0
     total_evidence_references: int = 0
     tool_call_count: int | None = None
+    attempt_count: int = Field(default=1, ge=1, le=2)
+    attempt_errors: list[EvaluationError] = Field(default_factory=list)
 
 
 class EvaluationMetrics(ReportModel):

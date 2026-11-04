@@ -65,7 +65,7 @@ def aggregate_metrics(cases: Sequence[CaseEvaluation], pricing: PricingConfig) -
     valid_references = sum(case.valid_evidence_references for case in cases)
     total_references = sum(case.total_evidence_references for case in cases)
     usage = aggregate_usage(results)
-    usage_complete = bool(cases) and len(completed) == len(cases) and all(
+    usage_complete = bool(cases) and len(completed) == len(cases) and all(case.attempt_count == 1 for case in cases) and all(
         result.usage.requests_with_usage == result.usage.request_count
         and result.usage.input_tokens is not None and result.usage.output_tokens is not None
         for result in results

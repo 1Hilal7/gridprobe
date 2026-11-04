@@ -3,18 +3,22 @@
 import json
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from openai.types.chat import ChatCompletion, ParsedChatCompletion
 from pydantic import ValidationError
 
 from backend.agent.contracts import DiagnosisResult
-from backend.agent.errors import AgentProviderError
+from backend.agent.errors import (
+    AgentProviderError, DiagnosisSchemaError, MalformedToolArgumentsError,
+    ToolExecutionError, UnknownToolError,
+)
+from backend.api.config import product_pricing
 from backend.agent.models import InvestigationResult, ModelUsageSummary, TraceStep
 from backend.evaluation.config import EvaluationConfigurationError, PricingConfig
 from backend.evaluation.models import EvaluationReport
-from backend.evaluation.runner import EvaluationDatasetError, evaluate_cases, load_evaluation_cases
+from backend.evaluation.runner import EvaluationDatasetError, evaluate_cases, load_evaluation_cases, select_evaluation_cases
 from backend.evaluation.scoring import aggregate_metrics, estimate_api_cost, score_investigation
 from backend.scenarios.loader import load_scenarios
 from backend.scenarios.models import ScenarioCase
@@ -134,7 +138,7 @@ def test_missing_usage_and_prices_are_not_reported_as_zero(cases: list[ScenarioC
 
 def test_zero_configured_prices_are_distinct_from_missing_prices() -> None:
     usage = ModelUsageSummary(input_tokens=100, output_tokens=50, reasoning_tokens=20)
-    assert estimate_api_cost(usage, PricingConfig()) is None
+    assert estimate_api_cost(usage, PricingConfig(input_price_per_million=None, output_price_per_million=None)) is None
     assert estimate_api_cost(usage, PricingConfig(input_price_per_million=0, output_price_per_million=0)) == 0
 
 
@@ -230,3 +234,112 @@ def test_empty_dataset_rejected(tmp_path: Path) -> None:
 def test_mismatched_result_identity_rejected(cases: list[ScenarioCase]) -> None:
     with pytest.raises(ValueError, match="identity"):
         score_investigation(cases[0], make_result(cases[1]))
+
+
+def test_standard_pricing_defaults_match_product_api(monkeypatch: pytest.MonkeyPatch) -> None:
+    for variable in ("META_INPUT_PRICE_PER_MILLION", "META_OUTPUT_PRICE_PER_MILLION", "META_PRICE_CURRENCY"):
+        monkeypatch.delenv(variable, raising=False)
+    pricing = PricingConfig.from_env()
+    assert pricing.input_price_per_million == 1.25
+    assert pricing.output_price_per_million == 4.25
+    assert pricing.currency == "USD"
+    assert pricing == product_pricing() == PricingConfig()
+    usage = ModelUsageSummary(input_tokens=1_000_000, output_tokens=2_000_000, reasoning_tokens=1_000_000)
+    assert estimate_api_cost(usage, pricing) == 9.75
+    monkeypatch.setenv("META_INPUT_PRICE_PER_MILLION", "")
+    monkeypatch.setenv("META_OUTPUT_PRICE_PER_MILLION", "")
+    assert PricingConfig.from_env() == pricing
+
+
+def test_retry_is_opt_in_and_bounded_once(cases: list[ScenarioCase]) -> None:
+    provider = MagicMock()
+    provider.chat_completion.side_effect = AgentProviderError("PRIVATE-RETRY-CREDENTIAL")
+    retry = MagicMock()
+    report = evaluate_cases(cases[:1], provider, pricing=PricingConfig(), retry_provider_failures=True, on_retry=retry)
+    assert provider.chat_completion.call_count == 2
+    provider.structured_completion.assert_not_called()
+    retry.assert_called_once_with(cases[0].case_id)
+    assert report.cases[0].attempt_count == 2
+    assert [error.code for error in report.cases[0].attempt_errors] == ["PROVIDER_FAILED", "PROVIDER_FAILED"]
+    assert report.cases[0].error.code == "PROVIDER_FAILED"
+    assert "PRIVATE-RETRY-CREDENTIAL" not in report.model_dump_json()
+    provider.reset_mock()
+    evaluate_cases(cases[:1], provider, pricing=PricingConfig())
+    assert provider.chat_completion.call_count == 1
+
+
+def test_successful_retry_uses_fresh_context_and_deduplicated_new_ledger(cases: list[ScenarioCase]) -> None:
+    case = cases[1]
+    tool_data = stop_response().model_dump()
+    tool_data["choices"][0]["finish_reason"] = "tool_calls"
+    tool_data["choices"][0]["message"].update(content=None, tool_calls=[{
+        "id": "same-id-in-fresh-investigation", "type": "function", "function": {
+            "name": "calculate_phase_imbalance", "arguments": json.dumps({"panel_id": case.panel_id}),
+        },
+    }])
+    tool_response = ChatCompletion.model_validate(tool_data)
+    provider = MagicMock()
+    provider.chat_completion.side_effect = [
+        tool_response, AgentProviderError("private failure"), tool_response, stop_response(),
+    ]
+    final = abstention_response()
+    final.choices[0].message.parsed.evidence_ids = ["EV-001"]
+    final.choices[0].message.content = final.choices[0].message.parsed.model_dump_json()
+    provider.structured_completion.return_value = final
+    report = evaluate_cases([case], provider, pricing=PricingConfig(), retry_provider_failures=True)
+    assert report.metrics.completed_case_count == 1
+    assert report.cases[0].attempt_count == 2
+    assert report.cases[0].error is None
+    assert [record.id for record in report.cases[0].investigation.evidence] == ["EV-001"]
+    assert report.cases[0].attempt_errors[0].code == "PROVIDER_FAILED"
+    first = provider.chat_completion.call_args_list[0].args[0]
+    repeated = provider.chat_completion.call_args_list[2].args[0]
+    assert first == repeated
+    initial = json.loads(repeated[1]["content"].split("\n", 1)[1])
+    assert set(initial) == {"case_id", "panel_id", "initial_snapshot"}
+    assert "hidden_ground_truth" not in str(provider.mock_calls)
+    assert "expected_relevant_evidence" not in str(provider.mock_calls)
+
+
+@pytest.mark.parametrize("error", [
+    DiagnosisSchemaError("private"), UnknownToolError("private"),
+    MalformedToolArgumentsError("private"), ToolExecutionError("private"), ValueError("private"),
+])
+def test_non_provider_failures_are_not_retried(cases: list[ScenarioCase], error: Exception) -> None:
+    retry = MagicMock()
+    with patch("backend.evaluation.runner.MuseOrchestrator") as orchestrator:
+        orchestrator.return_value.investigate.side_effect = error
+        report = evaluate_cases(cases[:1], MagicMock(), pricing=PricingConfig(), retry_provider_failures=True, on_retry=retry)
+        orchestrator.return_value.investigate.assert_called_once_with()
+    retry.assert_not_called()
+    assert report.cases[0].attempt_count == 1
+    assert report.cases[0].investigation is None
+    assert report.cases[0].error.code != "PROVIDER_FAILED"
+
+
+def test_retry_followed_by_schema_failure_stops(cases: list[ScenarioCase]) -> None:
+    with patch("backend.evaluation.runner.MuseOrchestrator") as orchestrator:
+        orchestrator.return_value.investigate.side_effect = [AgentProviderError("private"), DiagnosisSchemaError("private")]
+        report = evaluate_cases(cases[:1], MagicMock(), pricing=PricingConfig(), retry_provider_failures=True)
+        assert orchestrator.return_value.investigate.call_count == 2
+    assert report.cases[0].error.code == "DIAGNOSIS_SCHEMA_FAILED"
+    assert report.cases[0].attempt_count == 2
+
+
+def test_retry_usage_and_cost_remain_explicitly_partial(cases: list[ScenarioCase]) -> None:
+    with patch("backend.evaluation.runner.MuseOrchestrator") as orchestrator:
+        result = make_result(cases[0])
+        orchestrator.return_value.investigate.side_effect = [AgentProviderError("private"), result]
+        report = evaluate_cases(cases[:1], MagicMock(), pricing=PricingConfig(), retry_provider_failures=True)
+    assert report.metrics.usage_complete is False
+    assert report.metrics.cost_is_partial is True
+    assert report.metrics.usage.request_count == result.usage.request_count
+    assert report.metrics.estimated_api_cost == pytest.approx((100 * 1.25 + 50 * 4.25) / 1_000_000)
+
+
+def test_case_selection_preserves_order_and_deduplicates(cases: list[ScenarioCase]) -> None:
+    selected = select_evaluation_cases(cases, [cases[1].case_id, cases[0].case_id, cases[1].case_id])
+    assert selected == cases[:2]
+    assert select_evaluation_cases(cases, None) == cases
+    with pytest.raises(EvaluationDatasetError):
+        select_evaluation_cases(cases, ["UNAVAILABLE"])

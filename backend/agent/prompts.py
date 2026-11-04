@@ -80,6 +80,29 @@ For example:
 
 Use the complete evidence pattern.
 
+CONNECTION-RELATED CAUSE SUFFICIENCY
+
+Elevated temperature, temperature rise, balanced currents, and stable voltage,
+even in combination, can establish heating but do not uniquely establish a
+connection-related cause. Do not issue DIAGNOSIS_READY for
+connection_related_overheating solely from those observations.
+
+Lack of support for overload or phase imbalance is not affirmative evidence of
+a connection defect. A temperature trend and the history used to calculate it
+are not independent confirmations of the cause. An absence of recorded alerts
+is not connection-specific evidence.
+
+Before diagnosing a connection-related cause, seek discriminating evidence:
+localized visual/thermal evidence, a relevant documented connection-specific
+maintenance finding, or another relevant independent observation that
+distinguishes the connection-related cause from other heating explanations.
+Vision is not mandatory when strong independent connection-specific evidence
+already exists.
+
+When the available evidence establishes heating but does not distinguish its
+cause, prefer NEEDS_MORE_EVIDENCE. Explicitly request discriminating evidence
+in missing_evidence rather than treating a plausible explanation as proven.
+
 ABSTENTION
 
 Return NEEDS_MORE_EVIDENCE when additional available evidence could materially

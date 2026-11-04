@@ -41,7 +41,9 @@ def provider_factory(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 def test_default_cli_arguments() -> None:
     args = run_evaluation.parse_args([])
     assert args.cases_dir == run_evaluation.DEFAULT_EVALUATION_DIRECTORY
-    assert args.output == run_evaluation.DEFAULT_REPORT_PATH
+    assert args.output is None
+    assert args.case_ids is None
+    assert run_evaluation._output_path(args, []) == run_evaluation.DEFAULT_REPORT_PATH
     assert args.reliability == 1.0
 
 
@@ -57,7 +59,7 @@ def test_mocked_live_evaluation_writes_real_runner_report(
     assert report.metrics.diagnosis_accuracy == 0
     assert report.metrics.average_request_count == 2
     assert report.metrics.usage.total_tokens == 240
-    assert report.metrics.estimated_api_cost is None
+    assert report.metrics.estimated_api_cost == pytest.approx(0.00054)
     provider = provider_factory.return_value.__enter__.return_value
     assert provider.chat_completion.call_count == 8
     assert provider.structured_completion.call_count == 8
@@ -97,9 +99,12 @@ def test_provider_failures_produce_error_entries_not_fake_diagnoses(
     assert run_evaluation.main(["--output", str(path)]) == 1
     report = EvaluationReport.model_validate_json(path.read_text())
     assert report.metrics.failed_case_count == 8
+    assert provider_factory.return_value.__enter__.return_value.chat_completion.call_count == 16
+    assert all(case.attempt_count == 2 for case in report.cases)
     assert all(case.investigation is None and case.error is not None for case in report.cases)
     output = capsys.readouterr()
     assert "PRIVATE-TEST-KEY" not in output.out + output.err + path.read_text()
+    assert output.out.count("retrying case once (attempt 2/2)") == 8
 
 
 def test_bad_dataset_never_constructs_provider(tmp_path: Path, provider_factory: MagicMock) -> None:
@@ -124,3 +129,59 @@ def test_invalid_pricing_prevents_provider_call(
     monkeypatch.setenv("META_INPUT_PRICE_PER_MILLION", "2")
     assert run_evaluation.main(["--output", str(tmp_path / "results.json")]) == 1
     provider_factory.assert_not_called()
+
+
+def test_single_case_filter_runs_only_requested_case(tmp_path: Path, provider_factory: MagicMock) -> None:
+    output = tmp_path / "single.json"
+    assert run_evaluation.main(["--case", "EVAL-008", "--output", str(output)]) == 0
+    report = EvaluationReport.model_validate_json(output.read_text())
+    assert [case.case_id for case in report.cases] == ["EVAL-008"]
+    provider = provider_factory.return_value.__enter__.return_value
+    assert provider.chat_completion.call_count == 1
+    assert provider.structured_completion.call_count == 1
+    messages = provider.chat_completion.call_args.args[0]
+    initial = json.loads(messages[1]["content"].split("\n", 1)[1])
+    assert initial["case_id"] == "EVAL-008"
+    assert set(initial) == {"case_id", "panel_id", "initial_snapshot"}
+    assert "hidden_ground_truth" not in str(provider.mock_calls)
+    assert "expected_relevant_evidence" not in str(provider.mock_calls)
+
+
+def test_targeted_reports_preserve_full_report(
+    tmp_path: Path, provider_factory: MagicMock, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    full_report = tmp_path / "results.json"
+    full_report.write_text("original live report")
+    monkeypatch.setattr(run_evaluation, "DEFAULT_REPORT_PATH", full_report)
+    assert run_evaluation.main(["--case", "EVAL-008", "--case", "EVAL-004", "--case", "EVAL-008"]) == 0
+    assert full_report.read_text() == "original live report"
+    files = list((tmp_path / "reports").glob("*.json"))
+    assert len(files) == 1
+    report = EvaluationReport.model_validate_json(files[0].read_text())
+    assert [case.case_id for case in report.cases] == ["EVAL-004", "EVAL-008"]
+    assert provider_factory.return_value.__enter__.return_value.chat_completion.call_count == 2
+
+
+def test_unknown_case_filter_never_constructs_provider(tmp_path: Path, provider_factory: MagicMock) -> None:
+    assert run_evaluation.main(["--case", "UNAVAILABLE", "--output", str(tmp_path / "results.json")]) == 1
+    provider_factory.assert_not_called()
+
+
+def test_cli_retries_transient_provider_failure_once(
+    tmp_path: Path, provider_factory: MagicMock, capsys: pytest.CaptureFixture[str],
+) -> None:
+    provider = provider_factory.return_value.__enter__.return_value
+    success = provider.chat_completion.return_value
+    provider.chat_completion.side_effect = [MuseAPIError("PRIVATE-TRANSIENT-CREDENTIAL"), success]
+    path = tmp_path / "retried.json"
+    assert run_evaluation.main(["--case", "EVAL-008", "--output", str(path)]) == 0
+    report = EvaluationReport.model_validate_json(path.read_text())
+    assert report.cases[0].attempt_count == 2
+    assert report.cases[0].error is None
+    assert report.cases[0].attempt_errors[0].code == "PROVIDER_FAILED"
+    assert provider.chat_completion.call_count == 2
+    assert report.metrics.usage_complete is False
+    assert report.metrics.cost_is_partial is True
+    output = capsys.readouterr()
+    assert output.out.count("retrying case once (attempt 2/2)") == 1
+    assert "PRIVATE-TRANSIENT-CREDENTIAL" not in output.out + output.err + path.read_text()
