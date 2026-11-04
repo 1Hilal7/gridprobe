@@ -5,13 +5,14 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
-from openai import APIConnectionError, APIError, APIStatusError
-from openai.types.chat import ChatCompletion
+from openai import APIConnectionError, APIError, APIStatusError, ContentFilterFinishReasonError, LengthFinishReasonError
+from openai.types.chat import ChatCompletion, ParsedChatCompletion
 from pydantic import ValidationError
 
 from backend.agent import provider as provider_module
 from backend.agent.config import DEFAULT_META_MODEL, META_BASE_URL, MetaConfig
-from backend.agent.errors import MissingMetaAPIKeyError, MuseAPIError, MuseConfigurationError
+from backend.agent.contracts import DiagnosisResult
+from backend.agent.errors import MissingMetaAPIKeyError, MuseAPIError, MuseConfigurationError, MuseResponseParsingError
 from backend.agent.provider import MuseProvider
 
 
@@ -220,5 +221,85 @@ def test_other_sdk_failure(config: MetaConfig) -> None:
     )
     with pytest.raises(MuseAPIError, match="invalid response"):
         MuseProvider(config, client=client).chat_completion([{"role": "user", "content": "Hello."}])
+
+
+def test_structured_completion_uses_sdk_parsing_without_tools(
+    config: MetaConfig, completion: ChatCompletion,
+) -> None:
+    diagnosis = DiagnosisResult(
+        status="NO_ACTIONABLE_DIAGNOSIS", likely_fault="unknown", risk_level="UNKNOWN",
+        confidence=0.0, evidence_ids=[], reasoning_summary="Scripted schema test response.",
+        recommended_inspection="Qualified inspection if additional evidence becomes available.",
+        missing_evidence=[],
+    )
+    data = completion.model_dump()
+    data["choices"][0]["message"]["content"] = diagnosis.model_dump_json()
+    data["choices"][0]["message"]["parsed"] = diagnosis
+    parsed = ParsedChatCompletion[DiagnosisResult].model_validate(data)
+    client = MagicMock()
+    client.chat.completions.parse.return_value = parsed
+    messages = [{"role": "developer", "content": "Return the supplied structure."}]
+    result = MuseProvider(config, client=client).structured_completion(
+        messages, response_format=DiagnosisResult,
+    )
+    assert result is parsed
+    assert result.choices[0].message.parsed == diagnosis
+    client.chat.completions.parse.assert_called_once_with(
+        model="muse-spark-1.3", messages=messages, response_format=DiagnosisResult,
+    )
+    assert "tools" not in client.chat.completions.parse.call_args.kwargs
+    client.chat.completions.create.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", ["validation", "length", "filter"])
+def test_structured_parse_failure_is_redacted(
+    config: MetaConfig, completion: ChatCompletion, failure: str,
+) -> None:
+    if failure == "validation":
+        try:
+            DiagnosisResult.model_validate_json("PRIVATE-TEST-MARKER")
+        except ValidationError as exc:
+            error = exc
+    elif failure == "length":
+        error = LengthFinishReasonError(completion=completion)
+    else:
+        error = ContentFilterFinishReasonError(completion=completion)
+    client = MagicMock()
+    client.chat.completions.parse.side_effect = error
+    with pytest.raises(MuseResponseParsingError) as exc:
+        MuseProvider(config, client=client).structured_completion(
+            [{"role": "user", "content": "Return structured data."}], response_format=DiagnosisResult,
+        )
+    assert "PRIVATE-TEST-MARKER" not in str(exc.value)
+    assert exc.value.__suppress_context__
+    client.chat.completions.create.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", ["network", "status", "other"])
+def test_structured_request_api_failure(config: MetaConfig, failure: str) -> None:
+    request = httpx.Request("POST", META_BASE_URL)
+    if failure == "network":
+        error = APIConnectionError(request=request)
+    elif failure == "status":
+        error = APIStatusError("PRIVATE-TEST-MARKER", response=httpx.Response(400, request=request), body=None)
+    else:
+        error = APIError("PRIVATE-TEST-MARKER", request, body=None)
+    client = MagicMock()
+    client.chat.completions.parse.side_effect = error
+    with pytest.raises(MuseAPIError) as exc:
+        MuseProvider(config, client=client).structured_completion(
+            [{"role": "user", "content": "Return structured data."}], response_format=DiagnosisResult,
+        )
+    assert "PRIVATE-TEST-MARKER" not in str(exc.value)
+    assert client.chat.completions.parse.call_count == 1
+    client.chat.completions.create.assert_not_called()
+
+
+@pytest.mark.parametrize("messages", [[], [{"role": "system", "content": "Instructions."}]])
+def test_structured_message_policy(config: MetaConfig, messages: list[Any]) -> None:
+    client = MagicMock()
+    with pytest.raises(ValueError):
+        MuseProvider(config, client=client).structured_completion(messages, response_format=DiagnosisResult)
+    client.chat.completions.parse.assert_not_called()
 
 

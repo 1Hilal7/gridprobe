@@ -1,13 +1,17 @@
 """Small synchronous OpenAI-compatible provider for Meta Muse Spark."""
 
 from types import TracebackType
-from typing import Self
+from typing import Self, TypeVar
 
-from openai import APIConnectionError, APIError, APIStatusError, OpenAI
-from openai.types.chat import ChatCompletion, ChatCompletionMessageParam, ChatCompletionToolParam
+from openai import APIConnectionError, APIError, APIStatusError, ContentFilterFinishReasonError, LengthFinishReasonError, OpenAI
+from openai.types.chat import ChatCompletion, ChatCompletionMessageParam, ChatCompletionToolParam, ParsedChatCompletion
+from pydantic import BaseModel, ValidationError
 
 from backend.agent.config import MetaConfig
-from backend.agent.errors import MuseAPIError, MuseConfigurationError
+from backend.agent.errors import MuseAPIError, MuseConfigurationError, MuseResponseParsingError
+
+
+ResponseT = TypeVar("ResponseT", bound=BaseModel)
 
 
 class MuseProvider:
@@ -66,6 +70,37 @@ class MuseProvider:
         """Release the internally created client; leave injected clients open."""
         if self._owns_client:
             self._client.close()
+
+    def structured_completion(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        *,
+        response_format: type[ResponseT],
+    ) -> ParsedChatCompletion[ResponseT]:
+        """Request SDK-managed JSON schema output and Pydantic parsing, without tools.
+
+        Unsupported structured output is an API error; no free-text fallback
+        or extra request is made. Refusals with no parsed result are returned
+        for the caller to reject explicitly.
+        """
+        if not messages:
+            raise ValueError("At least one message is required.")
+        if any(message.get("role") == "system" for message in messages):
+            raise ValueError("Use the developer role for GridProbe-controlled instructions.")
+        try:
+            return self._client.chat.completions.parse(
+                model=self.config.model, messages=messages, response_format=response_format,
+            )
+        except (ValidationError, LengthFinishReasonError, ContentFilterFinishReasonError):
+            raise MuseResponseParsingError("Muse structured output could not be parsed or was incomplete.") from None
+        except APIConnectionError:
+            raise MuseAPIError("Meta API connection failed or timed out; check network access.") from None
+        except APIStatusError as exc:
+            raise MuseAPIError(
+                f"Meta API request failed with HTTP {exc.status_code}.", status_code=exc.status_code,
+            ) from None
+        except APIError:
+            raise MuseAPIError("Meta API request failed or returned an invalid response.") from None
 
     def __enter__(self) -> Self:
         return self
