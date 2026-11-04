@@ -145,28 +145,38 @@ def test_case_001_mocked_sequential_investigation(runtime: ScenarioToolRuntime) 
     provider = FakeMuseProvider([
         response(tool_call("calculate_phase_imbalance", "phase")),
         response(tool_call("calculate_temperature_trend", "trend", {"panel_id": "GP-017", "minutes": 60})),
+        response(tool_call("get_sensor_history", "current-history", {"panel_id": "GP-017", "sensor": "current_b", "minutes": 60})),
+        response(tool_call("get_sensor_history", "voltage-history", {"panel_id": "GP-017", "sensor": "voltage_b", "minutes": 60})),
         response(tool_call("get_maintenance_context", "maintenance")),
         response(content="Collected observations are available for finalization."),
-    ], final_response(["EV-001", "EV-002"]))
+    ], final_response([f"EV-{number:03d}" for number in range(1, 6)]))
     result = MuseOrchestrator(provider, runtime).investigate()
     outputs = [step for step in result.trace if step.kind == "TOOL_RESULT"]
     assert [step.tool_name for step in outputs] == [
-        "calculate_phase_imbalance", "calculate_temperature_trend", "get_maintenance_context"
+        "calculate_phase_imbalance", "calculate_temperature_trend", "get_sensor_history",
+        "get_sensor_history", "get_maintenance_context"
     ]
     assert outputs[0].tool_result["imbalance_percent"] == pytest.approx(28.1, abs=0.01)
     assert outputs[0].tool_result["most_deviant_phase"] == "B"
     assert outputs[1].tool_result["temperature_change"] == pytest.approx(32.1)
     assert outputs[1].tool_result["duration_minutes"] == 60
-    assert [step.evidence_ids_added for step in outputs] == [["EV-001"], ["EV-002"], []]
-    assert [record.id for record in result.evidence] == ["EV-001", "EV-002"]
-    assert result.diagnosis.evidence_ids == ["EV-001", "EV-002"]
-    assert result.usage.request_count == 5
+    evidence_ids = [f"EV-{number:03d}" for number in range(1, 6)]
+    assert [step.evidence_ids_added for step in outputs] == [[evidence_id] for evidence_id in evidence_ids]
+    assert [record.id for record in result.evidence] == evidence_ids
+    assert result.diagnosis.evidence_ids == evidence_ids
+    assert [record.type.value for record in result.evidence] == [
+        "PHASE_IMBALANCE", "TEMPERATURE_TREND", "CURRENT_HISTORY", "VOLTAGE_HISTORY", "MAINTENANCE_NOTE"
+    ]
+    assert result.usage.request_count == 7
     assert [step.step_number for step in result.trace] == list(range(1, len(result.trace) + 1))
     for request in provider.requests:
         assert request["tools"] == get_tool_definitions()
     final_messages = provider.final_requests[0]["messages"]
     tool_messages = [message for message in final_messages if message["role"] == "tool"]
-    assert [message["tool_call_id"] for message in tool_messages] == ["phase", "trend", "maintenance"]
+    assert [message["tool_call_id"] for message in tool_messages] == [
+        "phase", "trend", "current-history", "voltage-history", "maintenance"
+    ]
+    assert json.loads(final_messages[-1]["content"])["evidence_ledger"] == runtime.evidence_ledger.export()
     assert final_messages[:len(provider.requests[-1]["messages"])] == provider.requests[-1]["messages"]
 
 
@@ -176,7 +186,7 @@ def test_multiple_tool_calls_in_one_response(runtime: ScenarioToolRuntime) -> No
         tool_call("get_sensor_history", "history", {"panel_id": "GP-017", "sensor": "current_b", "minutes": 30}),
         tool_call("calculate_temperature_trend", "trend", {"panel_id": "GP-017", "minutes": 60}),
     ]
-    provider = FakeMuseProvider([response(*calls, content="Request these observations."), response(content="Done.")], final_response(["EV-001"]))
+    provider = FakeMuseProvider([response(*calls, content="Request these observations."), response(content="Done.")], final_response(["EV-001", "EV-002"]))
     result = MuseOrchestrator(provider, runtime).investigate()
     messages = provider.requests[1]["messages"]
     assert [message["role"] for message in messages] == ["developer", "user", "assistant", "tool", "tool", "tool"]
@@ -185,6 +195,8 @@ def test_multiple_tool_calls_in_one_response(runtime: ScenarioToolRuntime) -> No
     history = json.loads(messages[4]["content"])["result"]
     assert history["sensor"] == "current_b"
     assert all(set(point) == {"timestamp", "value"} for point in history["points"])
+    assert json.loads(messages[4]["content"])["evidence_ids_added"] == ["EV-001"]
+    assert json.loads(messages[5]["content"])["evidence_ids_added"] == ["EV-002"]
     assert [step.kind for step in result.trace[:7]] == [
         "MODEL_RESPONSE", "TOOL_CALL", "TOOL_RESULT", "TOOL_CALL", "TOOL_RESULT", "TOOL_CALL", "TOOL_RESULT"
     ]

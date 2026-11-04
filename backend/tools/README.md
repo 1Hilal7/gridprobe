@@ -21,19 +21,32 @@ Mixed awareness is rejected at initialization.
 
 Deterministic calculations delegate to `electrical.py` and use the existing
 evidence converters. Evidence timestamps use the snapshot timestamp. Reliability
-is explicitly supplied by the caller and is not inferred. Retrieval operations
-do not add evidence. The investigation owns `runtime.evidence_ledger`; consumers
+is explicitly supplied by the caller and is not inferred. History and maintenance
+retrievals also add evidence directly through their converters. Current snapshot
+retrieval is unchanged. The investigation owns `runtime.evidence_ledger`; consumers
 may retrieve, list, or export its records, but should not insert independently.
 
-Successful analysis requests are cached by tool, active panel, and validated
-arguments. The fixed scenario makes the phase result a single cache entry;
-temperature results are keyed by normalized float minutes (`60` and `60.0`
-match). Repeats return independent result copies and reuse existing evidence.
+Successful evidence-producing requests are cached by tool, active panel, and
+validated arguments. The fixed scenario makes phase and maintenance each a
+single cache entry. History uses `(sensor, float minutes)` and temperature
+analysis uses float minutes (`60` and `60.0` match). Repeats return independent
+result copies and reuse existing evidence.
 Distinct windows create distinct evidence even if their measurements coincide.
-Failures consume no ID or cache entry. IDs follow successful analysis insertion
+Failures consume no ID or cache entry. IDs follow successful evidence insertion
 order: `EV-001`, `EV-002`, etc. Each new runtime resets the sequence and cache.
 Temperature evidence also records requested minutes separately from measured
 duration, preserving which window was requested.
+
+History evidence uses `CURRENT_HISTORY`, `VOLTAGE_HISTORY`, or
+`TEMPERATURE_HISTORY`, with amperes, volts, or Celsius units. Its scalar value
+is null; metadata contains only the retrieved sensor's points, requested window,
+first/last/minimum/maximum values, count, and actual start/end timestamps. Empty
+retrievals are successful observations: count is zero, points are empty, and
+statistics/time bounds are null. Maintenance evidence uses `MAINTENANCE_NOTE`,
+copies the note into value, and preserves all recorded maintenance fields in
+metadata, including nulls and original alert/note wording. Summaries add no
+diagnostic interpretation. Both retrieval evidence timestamps use the current
+snapshot time; historical measurement and inspection dates remain separate.
 
 `get_tool_definitions()` returns fresh OpenAI-compatible JSON function
 definitions for the five operations, using the same argument models as runtime

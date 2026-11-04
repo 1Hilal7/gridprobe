@@ -1,9 +1,11 @@
-"""Convert numerical tool outputs to observations without interpreting faults."""
+"""Convert retrieved data and numerical outputs into uninterpreted observations."""
 
 from datetime import datetime
 
 from backend.evidence.models import EvidenceRecord, EvidenceSource, EvidenceType
+from backend.scenarios.models import MaintenanceContext
 from backend.tools.electrical import PhaseImbalanceResult, TemperatureTrendResult
+from backend.tools.models import Sensor, SensorHistoryResult
 
 
 def phase_imbalance_to_evidence(
@@ -56,4 +58,69 @@ def temperature_trend_to_evidence(
             "duration_minutes": result.duration_minutes,
             "rate_per_minute": result.rate_per_minute,
         },
+    )
+
+
+_HISTORY_TYPES_AND_UNITS: dict[Sensor, tuple[EvidenceType, str]] = {
+    "current_a": (EvidenceType.CURRENT_HISTORY, "amperes"),
+    "current_b": (EvidenceType.CURRENT_HISTORY, "amperes"),
+    "current_c": (EvidenceType.CURRENT_HISTORY, "amperes"),
+    "voltage_a": (EvidenceType.VOLTAGE_HISTORY, "volts"),
+    "voltage_b": (EvidenceType.VOLTAGE_HISTORY, "volts"),
+    "voltage_c": (EvidenceType.VOLTAGE_HISTORY, "volts"),
+    "temperature": (EvidenceType.TEMPERATURE_HISTORY, "celsius"),
+}
+
+
+def sensor_history_to_evidence(
+    result: SensorHistoryResult,
+    *,
+    evidence_id: str,
+    timestamp: datetime,
+    reliability: float,
+) -> EvidenceRecord:
+    """Preserve the exact retrieved series in its chronological retrieval order.
+
+    Series evidence has no single scalar value, so value is null. Empty
+    retrievals retain a zero count and null statistics/endpoints rather than
+    fabricating measurements. The record timestamp is supplied by the caller;
+    the series' actual time bounds are recorded separately in metadata.
+    """
+    evidence_type, unit = _HISTORY_TYPES_AND_UNITS[result.sensor]
+    points = result.model_dump(mode="json")["points"]
+    values = [point.value for point in result.points]
+    return EvidenceRecord(
+        id=evidence_id, source=EvidenceSource.HISTORY, type=evidence_type,
+        timestamp=timestamp,
+        summary=f"Retrieved {len(points)} timestamped measurements for {result.sensor}.",
+        value=None, unit=unit, tool_name="get_sensor_history", reliability=reliability,
+        metadata={
+            "panel_id": result.panel_id,
+            "sensor": result.sensor,
+            "requested_minutes": result.minutes,
+            "first_value": values[0] if values else None,
+            "last_value": values[-1] if values else None,
+            "minimum_value": min(values) if values else None,
+            "maximum_value": max(values) if values else None,
+            "number_of_points": len(points),
+            "start_timestamp": points[0]["timestamp"] if points else None,
+            "end_timestamp": points[-1]["timestamp"] if points else None,
+            "points": points,
+        },
+    )
+
+
+def maintenance_context_to_evidence(
+    context: MaintenanceContext,
+    *,
+    evidence_id: str,
+    timestamp: datetime,
+    reliability: float,
+) -> EvidenceRecord:
+    """Preserve recorded maintenance information verbatim, including unknowns."""
+    return EvidenceRecord(
+        id=evidence_id, source=EvidenceSource.MAINTENANCE_CONTEXT, type=EvidenceType.MAINTENANCE_NOTE,
+        timestamp=timestamp, summary="Retrieved recorded maintenance context.",
+        value=context.recent_maintenance_note, unit=None, tool_name="get_maintenance_context",
+        reliability=reliability, metadata=context.model_dump(mode="json"),
     )

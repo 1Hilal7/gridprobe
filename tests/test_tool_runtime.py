@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from pydantic import ValidationError
 
-from backend.evidence.models import EvidenceType
+from backend.evidence.models import EvidenceSource, EvidenceType
 from backend.scenarios.loader import load_scenario
 from backend.scenarios.models import ScenarioCase, ScenarioData, TelemetryHistoryPoint
 from backend.tools import electrical
@@ -83,7 +83,10 @@ def test_history_returns_only_requested_sensor(
     assert [point.timestamp for point in result.points] == [point.timestamp for point in expected]
     assert [point.value for point in result.points] == [getattr(point, sensor) for point in expected]
     assert all(set(point.model_dump()) == {"timestamp", "value"} for point in result.points)
-    assert runtime.evidence_ledger.export() == []
+    record = runtime.evidence_ledger.get("EV-001")
+    assert record.metadata["sensor"] == sensor
+    assert record.metadata["points"] == result.model_dump(mode="json")["points"]
+    assert len(runtime.evidence_ledger.list_all()) == 1
 
 
 def test_history_sorting_inclusive_boundaries_and_future_exclusion(data: ScenarioData) -> None:
@@ -140,7 +143,12 @@ def test_maintenance_context(runtime: ScenarioToolRuntime, data: ScenarioData) -
     }
     context.known_previous_alerts.clear()
     assert runtime.get_maintenance_context("GP-017").known_previous_alerts
-    assert runtime.evidence_ledger.export() == []
+    record = runtime.evidence_ledger.get("EV-001")
+    assert record.source is EvidenceSource.MAINTENANCE_CONTEXT
+    assert record.type is EvidenceType.MAINTENANCE_NOTE
+    assert record.metadata == {**data.maintenance_context.model_dump(mode="json"), "panel_id": "GP-017"}
+    assert record.value == data.maintenance_context.recent_maintenance_note
+    assert len(runtime.evidence_ledger.list_all()) == 1
 
 
 def test_phase_delegation_and_evidence(runtime: ScenarioToolRuntime) -> None:
@@ -224,21 +232,26 @@ def test_case_001_end_to_end_without_evaluation_annotations(runtime: ScenarioToo
     context = runtime.initial_context()
     panel_id = context.panel_id
     snapshot = runtime.get_current_snapshot(panel_id)
-    history = runtime.get_sensor_history(panel_id, "current_b", 60)
-    maintenance = runtime.get_maintenance_context(panel_id)
     phase = runtime.calculate_phase_imbalance(panel_id)
     trend = runtime.calculate_temperature_trend(panel_id, 60)
+    history = runtime.get_sensor_history(panel_id, "current_b", 60)
+    voltage = runtime.get_sensor_history(panel_id, "voltage_b", 60)
+    maintenance = runtime.get_maintenance_context(panel_id)
     assert phase.imbalance_percent == pytest.approx(28.1, abs=0.01)
     assert phase.most_deviant_phase == "B"
     assert trend.temperature_change == pytest.approx(32.1)
     assert trend.duration_minutes == 60
     assert trend.rate_per_minute == pytest.approx(0.535)
     records = runtime.evidence_ledger.list_all()
-    assert [record.type for record in records] == [EvidenceType.PHASE_IMBALANCE, EvidenceType.TEMPERATURE_TREND]
+    assert [record.type for record in records] == [
+        EvidenceType.PHASE_IMBALANCE, EvidenceType.TEMPERATURE_TREND, EvidenceType.CURRENT_HISTORY,
+        EvidenceType.VOLTAGE_HISTORY, EvidenceType.MAINTENANCE_NOTE,
+    ]
+    assert [record.id for record in records] == [f"EV-{number:03d}" for number in range(1, 6)]
     assert records[0].value == phase.imbalance_percent
     assert records[1].value == trend.temperature_change
 
-    outputs = [context, snapshot, history, maintenance, phase, trend]
+    outputs = [context, snapshot, history, voltage, maintenance, phase, trend]
     serialized = json.dumps([
         *[output.model_dump(mode="json") for output in outputs],
         runtime.evidence_ledger.export(),
@@ -246,3 +259,44 @@ def test_case_001_end_to_end_without_evaluation_annotations(runtime: ScenarioToo
     for forbidden in ("hidden_ground_truth", "expected_relevant_evidence", "connection_related_overheating", "likely_fault"):
         assert forbidden not in serialized
     assert not hasattr(runtime, "scenario_data")
+
+
+def test_history_deduplication_uses_sensor_and_normalized_window(runtime: ScenarioToolRuntime) -> None:
+    first = runtime.get_sensor_history("GP-017", "current_b", 60)
+    original_record = runtime.evidence_ledger.get("EV-001")
+    assert runtime.get_sensor_history("GP-017", "current_b", 60.0) == first
+    first.points.clear()
+    assert len(runtime.get_sensor_history("GP-017", "current_b", 60).points) == 6
+    assert runtime.evidence_ledger.list_all() == [original_record]
+    runtime.get_sensor_history("GP-017", "current_b", 30)
+    runtime.get_sensor_history("GP-017", "voltage_b", 60)
+    runtime.get_sensor_history("GP-017", "current_b", 61)
+    records = runtime.evidence_ledger.list_all()
+    assert [record.id for record in records] == ["EV-001", "EV-002", "EV-003", "EV-004"]
+    assert [record.metadata["requested_minutes"] for record in records] == [60, 30, 60, 61]
+    assert records[0].metadata["points"] == records[3].metadata["points"]
+    assert records[0].metadata["points"] != records[1].metadata["points"]
+
+
+def test_maintenance_deduplication_and_shared_id_sequence(runtime: ScenarioToolRuntime) -> None:
+    first = runtime.get_maintenance_context("GP-017")
+    original = runtime.evidence_ledger.get("EV-001")
+    first.known_previous_alerts.clear()
+    assert runtime.get_maintenance_context("GP-017").known_previous_alerts
+    assert runtime.evidence_ledger.list_all() == [original]
+    runtime.calculate_phase_imbalance("GP-017")
+    runtime.get_sensor_history("GP-017", "temperature", 60)
+    runtime.calculate_temperature_trend("GP-017", 60)
+    runtime.get_maintenance_context("GP-017")
+    assert [record.id for record in runtime.evidence_ledger.list_all()] == ["EV-001", "EV-002", "EV-003", "EV-004"]
+    assert runtime.evidence_ledger.get("EV-003").type is EvidenceType.TEMPERATURE_HISTORY
+
+
+def test_empty_history_retrieval_creates_deduplicated_evidence(runtime: ScenarioToolRuntime) -> None:
+    for minutes in (1, 1.0):
+        assert runtime.get_sensor_history("GP-017", "temperature", minutes).points == []
+    records = runtime.evidence_ledger.list_all()
+    assert len(records) == 1
+    assert records[0].metadata["number_of_points"] == 0
+    assert records[0].metadata["first_value"] is None
+    assert records[0].metadata["start_timestamp"] is None

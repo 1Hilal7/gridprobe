@@ -4,7 +4,10 @@ from datetime import datetime, timezone
 
 from pydantic import TypeAdapter
 
-from backend.evidence.converters import phase_imbalance_to_evidence, temperature_trend_to_evidence
+from backend.evidence.converters import (
+    maintenance_context_to_evidence, phase_imbalance_to_evidence,
+    sensor_history_to_evidence, temperature_trend_to_evidence,
+)
 from backend.evidence.ledger import EvidenceLedger
 from backend.scenarios.models import MaintenanceContext, ScenarioData, TelemetryHistoryPoint, TelemetrySnapshot
 from backend.tools import electrical
@@ -22,12 +25,13 @@ class ScenarioToolRuntime:
     carry evaluation annotations. A deep copy fixes the data for this runtime.
     Only initial_context() is intended as the initial model input.
 
-    Successful analyses are cached by (tool, panel_id, normalized arguments).
-    Phase requests have no other arguments; trends use validated float minutes,
-    so 60 and 60.0 share a cache entry. Repeated requests return result copies
+    Successful evidence-producing requests are cached by tool, active panel,
+    and normalized arguments. History uses (sensor, float minutes), trends use
+    float minutes, and phase/maintenance each use one entry. Thus 60 and 60.0
+    share a cache entry. Repeated requests return independent result copies
     without recalculation or new evidence. Different windows produce separate
     evidence, even when they contain the same points. Failures consume no IDs.
-    IDs are allocated in successful analysis order: EV-001, EV-002, ... .
+    IDs follow successful evidence-producing request order: EV-001, EV-002, ... .
     This synchronous runtime owns its ledger; callers may read it but should
     not insert evidence independently. A new runtime starts a new investigation.
     """
@@ -50,6 +54,8 @@ class ScenarioToolRuntime:
         self._next_evidence_number = 1
         self._phase_result: PhaseImbalanceResult | None = None
         self._trend_results: dict[float, TemperatureTrendResult] = {}
+        self._history_results: dict[tuple[Sensor, float], SensorHistoryResult] = {}
+        self._maintenance_context: MaintenanceContext | None = None
 
     @property
     def evidence_ledger(self) -> EvidenceLedger:
@@ -89,13 +95,23 @@ class ScenarioToolRuntime:
     def get_sensor_history(self, panel_id: str, sensor: Sensor, minutes: float) -> SensorHistoryResult:
         self._validate_panel(panel_id)
         request = HistoryRequest(panel_id=panel_id, sensor=sensor, minutes=minutes)
-        return SensorHistoryResult(
-            panel_id=panel_id, sensor=request.sensor, minutes=request.minutes,
-            points=[
-                SensorHistoryPoint(timestamp=point.timestamp, value=getattr(point, request.sensor))
-                for point in self._history_window(request.minutes)
-            ],
-        )
+        key = (request.sensor, request.minutes)
+        if key not in self._history_results:
+            result = SensorHistoryResult(
+                panel_id=panel_id, sensor=request.sensor, minutes=request.minutes,
+                points=[
+                    SensorHistoryPoint(timestamp=point.timestamp, value=getattr(point, request.sensor))
+                    for point in self._history_window(request.minutes)
+                ],
+            )
+            record = sensor_history_to_evidence(
+                result, evidence_id=f"EV-{self._next_evidence_number:03d}",
+                timestamp=self._data.initial_snapshot.timestamp, reliability=self._reliability,
+            )
+            self._ledger.add(record)
+            self._next_evidence_number += 1
+            self._history_results[key] = result.model_copy(deep=True)
+        return self._history_results[key].model_copy(deep=True)
 
     def calculate_phase_imbalance(self, panel_id: str) -> PhaseImbalanceResult:
         self._validate_panel(panel_id)
@@ -134,4 +150,14 @@ class ScenarioToolRuntime:
 
     def get_maintenance_context(self, panel_id: str) -> MaintenanceContext:
         self._validate_panel(panel_id)
-        return self._data.maintenance_context.model_copy(deep=True)
+        if self._maintenance_context is None:
+            result = self._data.maintenance_context.model_copy(deep=True)
+            record = maintenance_context_to_evidence(
+                result, evidence_id=f"EV-{self._next_evidence_number:03d}",
+                timestamp=self._data.initial_snapshot.timestamp, reliability=self._reliability,
+            )
+            record = record.model_copy(update={"metadata": {**record.metadata, "panel_id": panel_id}})
+            self._ledger.add(record)
+            self._next_evidence_number += 1
+            self._maintenance_context = result.model_copy(deep=True)
+        return self._maintenance_context.model_copy(deep=True)
