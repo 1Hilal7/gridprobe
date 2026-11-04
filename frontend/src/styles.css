@@ -349,3 +349,10 @@ select option { background: #17212b; color: #e0e7ef; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+.inspection-image { position: relative; margin-top: 12px; }
+.inspection-image img { display: block; width: 100%; height: auto; }
+.inspection-image svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.inspection-image rect { fill: #66d6c518; stroke: #66d6c5; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.segmentation-label { display: grid; gap: 7px; margin-top: 12px; font-size: 11px; line-height: 1.5; }
+.segmentation-label strong { color: #66d6c5; }
+.segmentation-label span { color: #9aa9b6; }

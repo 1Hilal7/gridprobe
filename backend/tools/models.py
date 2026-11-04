@@ -6,6 +6,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
 
 from backend.scenarios.models import TelemetrySnapshot
+from backend.vision.models import ConceptRequest
 
 
 Sensor = Literal[
@@ -31,6 +32,10 @@ class HistoryRequest(PanelRequest):
 
 class TrendRequest(PanelRequest):
     minutes: LookbackMinutes
+
+
+class VisualRequest(PanelRequest, ConceptRequest):
+    """Panel plus one component noun phrase; never a path or image URL."""
 
 
 class InitialContext(ToolModel):

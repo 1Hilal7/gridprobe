@@ -1,4 +1,5 @@
-import type { ScenarioSummary, TelemetrySnapshot } from '../types/api';
+import type { EvidenceRecord, ScenarioSummary, TelemetrySnapshot } from '../types/api';
+import { VisualInspection } from './VisualInspection';
 import { HistoryChart } from './HistoryChart';
 import { Icon } from './Icon';
 
@@ -14,7 +15,7 @@ function PanelSchematic() {
   </svg>;
 }
 
-export function PhysicalSystem({ scenario, history }: { scenario?: ScenarioSummary; history: TelemetrySnapshot[] }) {
+export function PhysicalSystem({ scenario, history, evidence }: { scenario?: ScenarioSummary; history: TelemetrySnapshot[]; evidence: EvidenceRecord[] }) {
   const snapshot = scenario?.initial_snapshot;
   const windowMinutes = snapshot && history.length
     ? Math.round((Date.parse(snapshot.timestamp) - Math.min(...history.map(point => Date.parse(point.timestamp)))) / 60000)
@@ -27,7 +28,7 @@ export function PhysicalSystem({ scenario, history }: { scenario?: ScenarioSumma
     <div className="telemetry-block"><div className="field-heading"><span>Current</span><span>A</span></div><div className="phase-values">{(['a', 'b', 'c'] as const).map(phase => <div key={phase}><span className={`phase-label phase-${phase}`}>PHASE {phase.toUpperCase()}</span><strong>{snapshot ? snapshot[`current_${phase}`].toFixed(1) : '—'}</strong></div>)}</div></div>
     <div className="temperature-reading"><div><span className="field-heading">Panel temperature</span><span className="subtle">Current snapshot</span></div><strong>{snapshot?.temperature.toFixed(1) ?? '—'}<small>°C</small></strong></div>
     <div className="history-section"><div className="subsection-heading"><span>TELEMETRY HISTORY</span><span>{windowMinutes === null ? 'AWAITING RUN' : `${windowMinutes} MIN WINDOW`}</span></div><HistoryChart history={history} snapshot={snapshot} kind="current" /><HistoryChart history={history} snapshot={snapshot} kind="temperature" /></div>
-    {scenario?.case_id === 'CASE-001' && <div className="visual-placeholder"><span className="eyebrow">VISUAL INSPECTION</span><div className="scan-frame"><Icon name="scan" size={26} /><strong>Visual evidence pending investigation</strong><span>{scenario.image_available ? 'Image source available · component inspection pending' : 'Awaiting component inspection'}</span></div></div>}
+    {scenario && (scenario.case_id === 'CASE-001' || scenario.image_available) && <VisualInspection key={scenario.case_id} scenario={scenario} evidence={evidence} />}
     <div className="snapshot-time"><span className="status-dot" />{snapshot ? `Snapshot ${new Date(snapshot.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Loading scenario telemetry'}</div>
   </section>;
 }

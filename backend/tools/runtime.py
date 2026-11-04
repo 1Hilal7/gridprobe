@@ -7,6 +7,7 @@ from pydantic import TypeAdapter
 from backend.evidence.converters import (
     maintenance_context_to_evidence, phase_imbalance_to_evidence,
     sensor_history_to_evidence, temperature_trend_to_evidence,
+    visual_segmentation_to_evidence,
 )
 from backend.evidence.ledger import EvidenceLedger
 from backend.scenarios.models import MaintenanceContext, ScenarioData, TelemetryHistoryPoint, TelemetrySnapshot
@@ -14,8 +15,12 @@ from backend.tools import electrical
 from backend.tools.electrical import PhaseImbalanceResult, TemperatureTrendResult
 from backend.tools.models import (
     HistoryRequest, InitialContext, PanelRequest, Reliability, Sensor,
-    SensorHistoryPoint, SensorHistoryResult, TrendRequest,
+    SensorHistoryPoint, SensorHistoryResult, TrendRequest, VisualRequest,
 )
+from backend.vision.assets import resolve_scenario_image
+from backend.vision.errors import SamError, SamImageError, SamPathError
+from backend.vision.models import SegmentationResult, VisualToolResult
+from backend.vision.provider import SamProvider
 
 
 class ScenarioToolRuntime:
@@ -39,6 +44,7 @@ class ScenarioToolRuntime:
     def __init__(
         self, data: ScenarioData, *, reliability: float,
         evidence_ledger: EvidenceLedger | None = None,
+        sam_provider: SamProvider | None = None,
     ) -> None:
         if type(data) is not ScenarioData:
             raise TypeError("Pass a plain ScenarioData projection to the tool runtime.")
@@ -56,6 +62,8 @@ class ScenarioToolRuntime:
         self._trend_results: dict[float, TemperatureTrendResult] = {}
         self._history_results: dict[tuple[Sensor, float], SensorHistoryResult] = {}
         self._maintenance_context: MaintenanceContext | None = None
+        self._sam_provider = sam_provider
+        self._visual_results: dict[str, VisualToolResult] = {}
 
     @property
     def evidence_ledger(self) -> EvidenceLedger:
@@ -161,3 +169,47 @@ class ScenarioToolRuntime:
             self._next_evidence_number += 1
             self._maintenance_context = result.model_copy(deep=True)
         return self._maintenance_context.model_copy(deep=True)
+
+    def inspect_component_image(self, panel_id: str, concept: str) -> VisualToolResult:
+        self._validate_panel(panel_id)
+        request = VisualRequest(panel_id=panel_id, concept=concept)
+        if request.concept in self._visual_results:
+            # Existing evidence remains referenceable, but no new IDs were added.
+            return self._visual_results[request.concept].model_copy(deep=True, update={"evidence_ids_added": []})
+        if self._data.optional_image is None:
+            return VisualToolResult(status="unavailable", concept=request.concept,
+                                    error_code="NO_SCENARIO_IMAGE", message="No image is supplied for this panel.")
+        try:
+            path = resolve_scenario_image(self._data.optional_image)
+            provider = self._sam_provider if self._sam_provider is not None else SamProvider()
+            result = provider.segment(path, request.concept)
+            result = SegmentationResult.model_validate(result.model_dump())
+            if result.concept != request.concept:
+                raise ValueError("Segmentation concept mismatch")
+        except SamError as error:
+            return VisualToolResult(
+                status="unavailable" if isinstance(error, (SamImageError, SamPathError)) else "error",
+                concept=request.concept, error_code=error.code,
+                message="Visual inspection is unavailable; use other observations or request additional evidence.",
+            )
+        except Exception:
+            return VisualToolResult(status="error", concept=request.concept, error_code="SAM_FAILED",
+                                    message="Visual inspection could not be completed.")
+        evidence_id = f"EV-{self._next_evidence_number:03d}"
+        # The identifier must not carry scenario labels or filesystem details.
+        suffix = path.suffix.lower()
+        identifier = "component-image" + (suffix if suffix in {".jpg", ".jpeg", ".png", ".webp"} else "")
+        record = visual_segmentation_to_evidence(
+            result, image_identifier=identifier, evidence_id=evidence_id,
+            timestamp=self._data.initial_snapshot.timestamp, reliability=self._reliability,
+        )
+        self._ledger.add(record)
+        self._next_evidence_number += 1
+        response = VisualToolResult(
+            status="completed", concept=result.concept, objects_found=result.objects_found,
+            boxes=result.boxes, mask_count=len(result.masks), image_width=result.image_width,
+            image_height=result.image_height, image_identifier=identifier,
+            evidence_ids=[evidence_id], evidence_ids_added=[evidence_id],
+        )
+        self._visual_results[request.concept] = response.model_copy(deep=True)
+        return response

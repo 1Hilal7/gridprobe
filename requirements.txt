@@ -4,3 +4,5 @@ uvicorn
 pytest
 httpx
 openai
+meta-sam-parser==0.1.0
+Pillow

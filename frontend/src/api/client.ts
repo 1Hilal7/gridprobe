@@ -39,6 +39,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const listScenarios = (signal?: AbortSignal) => request<ScenarioSummary[]>('/api/scenarios', { signal });
+export const scenarioImageUrl = (caseId: string) => `${BASE_URL}/api/scenarios/${encodeURIComponent(caseId)}/image`;
 
 export const investigate = (caseId: string) => request<InvestigationResponse>('/api/investigations', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ case_id: caseId }),

@@ -1,6 +1,7 @@
 """Product boundary around the unchanged scenario runtime and Muse agent."""
 
 import os
+from pathlib import Path
 from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -18,6 +19,8 @@ from backend.evidence.ledger import EvidenceLedger
 from backend.scenarios.loader import DEFAULT_SCENARIO_DIRECTORY, load_scenario
 from backend.scenarios.models import ScenarioData
 from backend.tools.runtime import ScenarioToolRuntime
+from backend.vision.assets import resolve_scenario_image
+from backend.vision.errors import SamError
 
 
 PRIMARY_SCENARIOS = {
@@ -50,9 +53,22 @@ def _load_primary(case_id: str) -> ScenarioData:
 def _image_available(data: ScenarioData) -> bool:
     if data.optional_image is None:
         return False
-    root = DEFAULT_SCENARIO_DIRECTORY.parents[1]
-    path = (root / data.optional_image).resolve()
-    return path.is_relative_to(root / "demo/assets") and path.is_file()
+    try:
+        resolve_scenario_image(data.optional_image)
+        return True
+    except SamError:
+        return False
+
+
+def demo_image_path(case_id: str) -> Path:
+    """Resolve an allowlisted case's image, never a client-supplied path."""
+    data = _load_primary(case_id)
+    if data.optional_image is not None:
+        try:
+            return resolve_scenario_image(data.optional_image)
+        except SamError:
+            pass
+    raise ProductAPIError(404, "IMAGE_UNAVAILABLE", "The demo image is unavailable.")
 
 
 def _summary(data: ScenarioData) -> ScenarioSummary:

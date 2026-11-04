@@ -19,7 +19,7 @@ from backend.agent.errors import (
 from backend.agent.models import AgentErrorInfo, InvestigationResult, ModelUsageSummary, TraceStep
 from backend.agent.prompts import GRIDPROBE_DEVELOPER_PROMPT
 from backend.tools.definitions import get_tool_definitions
-from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest
+from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest, VisualRequest
 from backend.tools.runtime import ScenarioToolRuntime
 
 
@@ -47,6 +47,7 @@ _REQUEST_MODELS: dict[str, type[BaseModel]] = {
     "calculate_phase_imbalance": PanelRequest,
     "calculate_temperature_trend": TrendRequest,
     "get_maintenance_context": PanelRequest,
+    "inspect_component_image": VisualRequest,
 }
 
 
@@ -192,6 +193,7 @@ class MuseOrchestrator:
             "calculate_phase_imbalance": self._runtime.calculate_phase_imbalance,
             "calculate_temperature_trend": self._runtime.calculate_temperature_trend,
             "get_maintenance_context": self._runtime.get_maintenance_context,
+            "inspect_component_image": self._runtime.inspect_component_image,
         }
         arguments = request.model_dump(mode="json")
         trace.append(TraceStep(

@@ -197,13 +197,67 @@ def test_multiple_tool_calls_in_one_response(runtime: ScenarioToolRuntime) -> No
     ]
 
 
-@pytest.mark.parametrize("name", ["unknown", "__getattribute__", "initial_context", "inspect_component_image"])
+@pytest.mark.parametrize("name", ["unknown", "__getattribute__", "initial_context", "read_arbitrary_image"])
 def test_unknown_tool_rejected(runtime: ScenarioToolRuntime, name: str) -> None:
     provider = FakeMuseProvider([response(tool_call(name, "unknown"))])
     with pytest.raises(UnknownToolError):
         MuseOrchestrator(provider, runtime).investigate()
     assert runtime.evidence_ledger.export() == []
     assert provider.final_requests == []
+
+
+def test_visual_dispatch_missing_image_is_recoverable(runtime: ScenarioToolRuntime) -> None:
+    provider = FakeMuseProvider([
+        response(tool_call("inspect_component_image", "visual", {"panel_id": "GP-017", "concept": "electrical terminal"})),
+        response(content="Additional component evidence is unavailable."),
+    ])
+    result = MuseOrchestrator(provider, runtime).investigate()
+    visual = next(step for step in result.trace if step.kind == "TOOL_RESULT")
+    assert visual.tool_result["status"] == "unavailable"
+    assert visual.tool_result["error_code"] == "NO_SCENARIO_IMAGE"
+    assert result.diagnosis.status == "NEEDS_MORE_EVIDENCE"
+    assert result.evidence == []
+
+
+def test_visual_dispatch_evidence_and_repeated_request(connection_overheating_case, tmp_path, monkeypatch) -> None:
+    from unittest.mock import MagicMock
+    from backend.vision.models import ComponentBox, SegmentationResult
+
+    path = tmp_path / "terminal.jpg"
+    path.write_bytes(b"Mocked provider owns image decoding in this test")
+    monkeypatch.setattr("backend.tools.runtime.resolve_scenario_image", lambda reference: path)
+    sam = MagicMock()
+    sam.segment.return_value = SegmentationResult(
+        concept="electrical terminal", objects_found=1, image_width=100, image_height=100,
+        boxes=[ComponentBox(object_id="0", left=10, top=10, right=40, bottom=40)], masks=[],
+    )
+    runtime = ScenarioToolRuntime(connection_overheating_case.to_scenario_data(), reliability=0.8, sam_provider=sam)
+    args = {"panel_id": "GP-021", "concept": "electrical terminal"}
+    provider = FakeMuseProvider([
+        response(tool_call("inspect_component_image", "visual-1", args)),
+        response(tool_call("inspect_component_image", "visual-2", args)),
+        response(content="Finalize from the available observations."),
+    ], final_response(["EV-001"]))
+    result = MuseOrchestrator(provider, runtime).investigate()
+    assert len(result.evidence) == 1 and result.evidence[0].source == "VISION"
+    sam.segment.assert_called_once()
+    steps = [step for step in result.trace if step.kind == "TOOL_RESULT"]
+    assert steps[0].evidence_ids_added == ["EV-001"] and steps[1].evidence_ids_added == []
+    assert steps[1].tool_result["evidence_ids"] == ["EV-001"]
+    final_ledger = json.loads(provider.final_requests[0]["messages"][-1]["content"])["evidence_ledger"]
+    assert final_ledger[0]["source"] == "VISION"
+    assert [step.step_number for step in result.trace] == list(range(1, len(result.trace) + 1))
+    serialized = json.dumps([request["messages"] for request in provider.requests + provider.final_requests])
+    assert "hidden_ground_truth" not in serialized and "expected_relevant_evidence" not in serialized
+
+
+def test_visual_is_not_automatically_requested(connection_overheating_case) -> None:
+    from unittest.mock import MagicMock
+    sam = MagicMock()
+    runtime = ScenarioToolRuntime(connection_overheating_case.to_scenario_data(), reliability=1.0, sam_provider=sam)
+    MuseOrchestrator(FakeMuseProvider([response(content="Need additional evidence.")]), runtime).investigate()
+    sam.segment.assert_not_called()
+    assert runtime.evidence_ledger.export() == []
 
 
 @pytest.mark.parametrize("arguments", [

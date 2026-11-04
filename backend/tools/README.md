@@ -9,7 +9,7 @@ it contains `case_id`, `panel_id`, and `initial_snapshot`.
 An optional `evidence_ledger=` argument accepts a caller-constructed empty
 `EvidenceLedger`. The runtime otherwise constructs its own ledger as before.
 
-The five operations validate the active panel ID. History retrieval returns a
+The six operations validate the active panel ID. History retrieval returns a
 typed envelope with panel, sensor, requested minutes, and timestamp/value
 points for that sensor only. Windows are inclusive, end at the snapshot time,
 and exclude future points. Retrieval uses stored history only; the temperature
@@ -49,7 +49,19 @@ diagnostic interpretation. Both retrieval evidence timestamps use the current
 snapshot time; historical measurement and inspection dates remain separate.
 
 `get_tool_definitions()` returns fresh OpenAI-compatible JSON function
-definitions for the five operations, using the same argument models as runtime
+definitions for the six operations, using the same argument models as runtime
 validation. They can be passed as `tools=` to `MuseProvider.chat_completion()`.
 This module does not call the provider, dispatch model responses, or run an
 agent loop.
+
+`inspect_component_image(panel_id, concept)` uses an optional injected
+`sam_provider=` or lazily creates the real SAM provider. Only a scenario-supplied
+image inside `demo/assets` can be inspected. Requests cannot supply file paths.
+The fixed six-tool interface reports `unavailable` for imageless panels or
+missing assets, and a sanitized `error` for SAM failures; neither creates
+evidence. A completed result, including zero objects, creates VISION evidence.
+The normalized concept (lowercase, collapsed whitespace) is the visual cache
+key within the fixed panel/image investigation. Repeats return `evidence_ids`
+for the existing record and an empty `evidence_ids_added`, without another SAM
+call. Distinct concepts create distinct records in the existing ID sequence.
+See [the visual boundary](../../docs/vision.md) for output and path constraints.

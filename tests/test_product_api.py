@@ -83,6 +83,40 @@ def test_scenario_listing_is_public_and_contains_four_cases(client: TestClient, 
     provider_factory.assert_not_called()
 
 
+def test_visual_investigation_serialization(client, provider_factory, monkeypatch, tmp_path) -> None:
+    from PIL import Image
+    from backend.vision import assets
+    from backend.vision.models import ComponentBox, SegmentationResult
+
+    path = tmp_path / "demo/assets/case_001_terminal.jpg"
+    path.parent.mkdir(parents=True)
+    Image.new("RGB", (100, 100)).save(path)
+    monkeypatch.setattr(assets, "REPOSITORY_ROOT", tmp_path)
+    monkeypatch.setattr(assets, "ASSET_ROOT", path.parent)
+    sam = MagicMock()
+    sam.segment.return_value = SegmentationResult(concept="electrical terminal", objects_found=1,
+        image_width=100, image_height=100,
+        boxes=[ComponentBox(object_id="0", left=10, top=10, right=40, bottom=40)], masks=[])
+    monkeypatch.setattr("backend.tools.runtime.SamProvider", lambda: sam)
+    provider = provider_factory.return_value.__enter__.return_value
+    provider.chat_completion.side_effect = [completion(calls=[{
+        "id": "visual", "type": "function", "function": {
+            "name": "inspect_component_image", "arguments": json.dumps({"panel_id": "GP-021", "concept": "electrical terminal"}),
+        },
+    }]), completion(content="Done")]
+    response = client.post("/api/investigations", json={"case_id": "CASE-001"})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["case"]["image_available"] is True
+    assert body["evidence"][0]["source"] == "VISION"
+    assert body["evidence"][0]["metadata"]["boxes"][0]["right"] == 40
+    assert body["trace"][2]["tool_result"]["mask_count"] == 0
+    assert "hidden_ground_truth" not in response.text and "expected_relevant_evidence" not in response.text
+    assert "PRIVATE-API-TEST-KEY" not in response.text
+    assert "optional_image" not in response.text
+    assert client.get("/api/scenarios/CASE-001/image").status_code == 200
+
+
 @pytest.mark.parametrize("case_id", ["CASE-001", "CASE-002", "CASE-003", "CASE-004"])
 def test_mocked_investigation_uses_real_agent_and_serializes_public_result(
     client: TestClient, provider_factory: MagicMock, case_id: str,

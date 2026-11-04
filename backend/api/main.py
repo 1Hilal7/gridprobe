@@ -5,12 +5,14 @@ from typing import Literal
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from backend.api.config import frontend_origins
 from backend.api.models import InvestigationRequest, InvestigationResponse, ScenarioSummary
-from backend.api.service import ProductAPIError, list_demo_scenarios, run_investigation
+from backend.api.service import ProductAPIError, demo_image_path, list_demo_scenarios, run_investigation
+from backend.vision.errors import SamImageError
+from backend.vision.provider import read_image
 
 
 class HealthResponse(BaseModel):
@@ -50,6 +52,17 @@ def health() -> HealthResponse:
 @app.get("/api/scenarios", response_model=list[ScenarioSummary])
 def scenarios() -> list[ScenarioSummary]:
     return list_demo_scenarios()
+
+
+@app.get("/api/scenarios/{case_id}/image", response_class=FileResponse)
+def scenario_image(case_id: str) -> FileResponse:
+    path = demo_image_path(case_id)
+    try:
+        data_url, _, _ = read_image(path)
+    except SamImageError:
+        raise ProductAPIError(404, "IMAGE_UNAVAILABLE", "The demo image is unavailable.") from None
+    return FileResponse(path, media_type=data_url.split(";", 1)[0][5:],
+                        headers={"X-Content-Type-Options": "nosniff", "Cache-Control": "no-store"})
 
 
 @app.post("/api/investigations", response_model=InvestigationResponse)

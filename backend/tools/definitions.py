@@ -3,7 +3,7 @@
 from openai.types.chat import ChatCompletionToolParam
 from pydantic import BaseModel
 
-from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest
+from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest, VisualRequest
 
 
 def get_tool_definitions() -> list[ChatCompletionToolParam]:
@@ -42,6 +42,14 @@ def get_tool_definitions() -> list[ChatCompletionToolParam]:
             "get_maintenance_context",
             "Return only the panel's recorded inspection date, previous alerts, and maintenance note.",
             PanelRequest,
+        ),
+        (
+            "inspect_component_image",
+            "If a panel image is supplied, localize a component using SAM 3.1. Supply one short "
+            "concrete noun phrase such as electrical terminal. Returns object count, pixel boxes, "
+            "mask count, and evidence references only; segmentation does not establish causality. "
+            "A completed zero-match is valid. If no image is available, returns a structured unavailable result.",
+            VisualRequest,
         ),
     ]
     return [

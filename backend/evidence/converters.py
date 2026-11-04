@@ -6,6 +6,7 @@ from backend.evidence.models import EvidenceRecord, EvidenceSource, EvidenceType
 from backend.scenarios.models import MaintenanceContext
 from backend.tools.electrical import PhaseImbalanceResult, TemperatureTrendResult
 from backend.tools.models import Sensor, SensorHistoryResult
+from backend.vision.models import SegmentationResult
 
 
 def phase_imbalance_to_evidence(
@@ -123,4 +124,26 @@ def maintenance_context_to_evidence(
         timestamp=timestamp, summary="Retrieved recorded maintenance context.",
         value=context.recent_maintenance_note, unit=None, tool_name="get_maintenance_context",
         reliability=reliability, metadata=context.model_dump(mode="json"),
+    )
+
+
+def visual_segmentation_to_evidence(
+    result: SegmentationResult, *, image_identifier: str, evidence_id: str,
+    timestamp: datetime, reliability: float,
+) -> EvidenceRecord:
+    """Localizations only. An empty completed match is also an observation."""
+    return EvidenceRecord(
+        id=evidence_id, source=EvidenceSource.VISION,
+        type=EvidenceType.VISUAL_COMPONENT_OBSERVATION, timestamp=timestamp,
+        summary=f"Component segmentation returned {result.objects_found} objects for {result.concept}.",
+        value=result.objects_found, unit="objects", tool_name="inspect_component_image",
+        reliability=reliability, metadata={
+            "concept": result.concept, "objects_found": result.objects_found,
+            "boxes": [box.model_dump(mode="json") for box in result.boxes],
+            "mask_count": len(result.masks),
+            "masks": [mask.model_dump(mode="json") for mask in result.masks],
+            "image_identifier": image_identifier, "sam_model": result.model,
+            "image_width": result.image_width, "image_height": result.image_height,
+            "coordinate_system": "source_image_pixels_half_open",
+        },
     )

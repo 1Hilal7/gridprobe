@@ -8,7 +8,7 @@ from openai.types.chat import ChatCompletionToolParam
 from pydantic import TypeAdapter, ValidationError
 
 from backend.tools.definitions import get_tool_definitions
-from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest
+from backend.tools.models import HistoryRequest, PanelRequest, TrendRequest, VisualRequest
 from backend.tools.runtime import ScenarioToolRuntime
 
 
@@ -18,12 +18,13 @@ REQUEST_MODELS = {
     "calculate_phase_imbalance": PanelRequest,
     "calculate_temperature_trend": TrendRequest,
     "get_maintenance_context": PanelRequest,
+    "inspect_component_image": VisualRequest,
 }
 
 
 def test_openai_compatible_tool_schemas() -> None:
     tools = get_tool_definitions()
-    assert len(tools) == 5
+    assert len(tools) == 6
     assert TypeAdapter(list[ChatCompletionToolParam]).validate_python(tools) == tools
     assert json.loads(json.dumps(tools, allow_nan=False)) == tools
     assert {tool["function"]["name"] for tool in tools} == set(REQUEST_MODELS)
@@ -62,6 +63,8 @@ def test_arguments_accept_only_documented_properties(name: str) -> None:
         arguments["minutes"] = 60
     if "sensor" in model.model_fields:
         arguments["sensor"] = "temperature"
+    if "concept" in model.model_fields:
+        arguments["concept"] = "electrical terminal"
     assert model.model_validate_json(json.dumps(arguments)).panel_id == "GP-017"
     with pytest.raises(ValidationError):
         model.model_validate({**arguments, "unexpected": True})

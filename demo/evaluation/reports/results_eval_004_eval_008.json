@@ -1,0 +1,1565 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-11-04T19:12:01.754109Z",
+  "model": "muse-spark-1.3",
+  "pricing": {
+    "input_price_per_million": 1.25,
+    "output_price_per_million": 4.25,
+    "currency": "USD"
+  },
+  "metrics": {
+    "case_count": 2,
+    "completed_case_count": 2,
+    "failed_case_count": 0,
+    "fault_case_count": 0,
+    "normal_or_insufficient_case_count": 2,
+    "diagnosis_accuracy": null,
+    "correct_abstention_rate": 1.0,
+    "unsafe_or_unnecessary_diagnosis_rate": 0.0,
+    "evidence_reference_validity": 100.0,
+    "valid_evidence_references": 14,
+    "total_evidence_references": 14,
+    "average_tool_calls": 8.0,
+    "average_request_count": 5.0,
+    "usage": {
+      "request_count": 10,
+      "requests_with_usage": 10,
+      "input_tokens": 33349,
+      "output_tokens": 10640,
+      "total_tokens": 43989,
+      "reasoning_tokens": 7153
+    },
+    "usage_complete": true,
+    "estimated_api_cost": 0.08690625,
+    "cost_is_partial": false
+  },
+  "cases": [
+    {
+      "case_id": "EVAL-004",
+      "panel_id": "GP-104",
+      "hidden_ground_truth": "normal_or_insufficient",
+      "investigation": {
+        "case_id": "EVAL-004",
+        "panel_id": "GP-104",
+        "trace": [
+          {
+            "step_number": 1,
+            "kind": "MODEL_RESPONSE",
+            "phase": "INVESTIGATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "Investigating panel GP-104 — pulling its live snapshot to start the evidence trail.",
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 2,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_current_snapshot",
+            "tool_call_id": "call_2c175569-b01d-4e54-8812-dff236dcf374",
+            "tool_arguments": {
+              "panel_id": "GP-104"
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 3,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_current_snapshot",
+            "tool_call_id": "call_2c175569-b01d-4e54-8812-dff236dcf374",
+            "tool_arguments": {
+              "panel_id": "GP-104"
+            },
+            "tool_result": {
+              "timestamp": "2026-11-04T09:00:00+03:00",
+              "voltage_a": 230.756,
+              "voltage_b": 230.726,
+              "voltage_c": 230.996,
+              "current_a": 18.14,
+              "current_b": 18.466,
+              "current_c": 18.283,
+              "temperature": 67.0
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 4,
+            "kind": "MODEL_RESPONSE",
+            "phase": "INVESTIGATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "Snapshot shows elevated temperature with balanced electrical readings. I'll check phase balance, thermal trend, and maintenance history.",
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 5,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "calculate_phase_imbalance",
+            "tool_call_id": "call_f9c1c377-2523-447f-b67a-37a5082324bc",
+            "tool_arguments": {
+              "panel_id": "GP-104"
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 6,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "calculate_phase_imbalance",
+            "tool_call_id": "call_f9c1c377-2523-447f-b67a-37a5082324bc",
+            "tool_arguments": {
+              "panel_id": "GP-104"
+            },
+            "tool_result": {
+              "average_current": 18.296333333333333,
+              "max_deviation": 0.16966666666666796,
+              "imbalance_percent": 0.927326058044424,
+              "most_deviant_phase": "B"
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-001"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 7,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "calculate_temperature_trend",
+            "tool_call_id": "call_e2c8fc14-3f9a-4baa-84c2-8e6ae38fc899",
+            "tool_arguments": {
+              "panel_id": "GP-104",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 8,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "calculate_temperature_trend",
+            "tool_call_id": "call_e2c8fc14-3f9a-4baa-84c2-8e6ae38fc899",
+            "tool_arguments": {
+              "panel_id": "GP-104",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "start_temperature": 60.718,
+              "end_temperature": 67.0,
+              "temperature_change": 6.2819999999999965,
+              "duration_minutes": 60.0,
+              "rate_per_minute": 0.10469999999999995
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-002"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 9,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_maintenance_context",
+            "tool_call_id": "call_2f413d41-a5ce-456a-8cbe-55b7bac6e950",
+            "tool_arguments": {
+              "panel_id": "GP-104"
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 10,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_maintenance_context",
+            "tool_call_id": "call_2f413d41-a5ce-456a-8cbe-55b7bac6e950",
+            "tool_arguments": {
+              "panel_id": "GP-104"
+            },
+            "tool_result": {
+              "last_inspection_date": "2026-10-14",
+              "known_previous_alerts": [],
+              "recent_maintenance_note": "No unresolved alerts were listed at the last inspection."
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-003"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 11,
+            "kind": "MODEL_RESPONSE",
+            "phase": "INVESTIGATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "Balanced phases with rising heat and clean history don't isolate the cause, so I'll examine recent sensor history to rule out load or voltage factors.",
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 12,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_b76e10e5-f989-4f53-96ba-699e7b1265ed",
+            "tool_arguments": {
+              "panel_id": "GP-104",
+              "sensor": "temperature",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 13,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_b76e10e5-f989-4f53-96ba-699e7b1265ed",
+            "tool_arguments": {
+              "panel_id": "GP-104",
+              "sensor": "temperature",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "panel_id": "GP-104",
+              "sensor": "temperature",
+              "minutes": 60.0,
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 60.718
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 61.091
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 60.88
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 61.172
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 61.193
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 61.404
+                }
+              ]
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-004"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 14,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_41dc1338-936e-429c-ba4e-c9ac372313ff",
+            "tool_arguments": {
+              "panel_id": "GP-104",
+              "sensor": "current_a",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 15,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_41dc1338-936e-429c-ba4e-c9ac372313ff",
+            "tool_arguments": {
+              "panel_id": "GP-104",
+              "sensor": "current_a",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "panel_id": "GP-104",
+              "sensor": "current_a",
+              "minutes": 60.0,
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 18.038
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 18.14
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 18.038
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 18.14
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 18.14
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 18.14
+                }
+              ]
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-005"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 16,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_505cdf5b-50af-4e42-8401-5c88f5d0d2f7",
+            "tool_arguments": {
+              "panel_id": "GP-104",
+              "sensor": "voltage_a",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 17,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_505cdf5b-50af-4e42-8401-5c88f5d0d2f7",
+            "tool_arguments": {
+              "panel_id": "GP-104",
+              "sensor": "voltage_a",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "panel_id": "GP-104",
+              "sensor": "voltage_a",
+              "minutes": 60.0,
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 230.79
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 230.701
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 230.812
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 230.723
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 230.834
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 230.745
+                }
+              ]
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-006"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 18,
+            "kind": "MODEL_RESPONSE",
+            "phase": "INVESTIGATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "{\n  \"case_id\": \"EVAL-004\",\n  \"panel_id\": \"GP-104\",\n  \"status\": \"NEEDS_MORE_EVIDENCE\",\n  \"fault_hypothesis\": \"unknown\",\n  \"summary\": \"Heating is established but cause is not distinguished. Balanced currents and stable voltage do not uniquely establish a connection-related cause per sufficiency policy.\",\n  \"evidence_used\": [\n    {\n      \"evidence_id\": \"EV-001\",\n      \"fact\": \"Phase imbalance 0.93% with average current 18.30A, max deviation 0.17A on phase B\",\n      \"interpretation\": \"Currents are balanced; does not support phase_imbalance and does not support overload on imbalance grounds alone.\"\n    },\n    {\n      \"evidence_id\": \"EV-002\",\n      \"fact\": \"Temperature trend +6.28C over 60 min from 60.718C to 67.0C at 0.105C/min\",\n      \"interpretation\": \"Establishes temperature rise / heating, not its cause.\"\n    },\n    {\n      \"evidence_id\": \"EV-004\",\n      \"fact\": \"Temperature history 08:00 60.718C to 08:50 61.404C, then 67.0C at 09:00 snapshot\",\n      \"interpretation\": \"Shows relatively stable temperatures followed by sharp recent rise to current snapshot; confirms heating pattern but is not independent of EV-002.\"\n    },\n    {\n      \"evidence_id\": \"EV-005\",\n      \"fact\": \"current_a history 18.038-18.14A stable over 60 min\",\n      \"interpretation\": \"Stable current; no evidence of rising load driving heating in this phase.\"\n    },\n    {\n      \"evidence_id\": \"EV-006\",\n      \"fact\": \"voltage_a history 230.70-230.83V stable over 60 min, snapshot voltages 230.756/230.726/230.996V\",\n      \"interpretation\": \"Voltage stable; does not explain heating, but stability alone is not connection-specific evidence.\"\n    },\n    {\n      \"evidence_id\": \"EV-003\",\n      \"fact\": \"Last inspection 2026-10-14, no previous alerts, note: No unresolved alerts\",\n      \"interpretation\": \"Absence of recorded alerts is not connection-specific evidence and does not establish cause.\"\n    }\n  ],\n  \"reasoning\": \"EV-002 and EV-004 establish heating. EV-001, EV-005, EV-006 show balanced currents and stable voltage, which rules out clear phase_imbalance evidence but per policy lack of support for overload or phase_imbalance is not affirmative evidence of a connection defect. No discriminating connection-specific evidence (localized visual/thermal evidence or documented connection finding) was available. Therefore connection_related_overheating cannot be issued as DIAGNOSIS_READY.\",\n  \"missing_evidence\": [\n    \"Localized discriminating evidence by qualified personnel: thermal imaging / hotspot localization to a terminal/lug vs general panel heating\",\n    \"Visual inspection finding for connection defect: discoloration, pitting, loose hardware, torque check result\",\n    \"Any documented connection-specific maintenance finding or independent observation distinguishing connection cause from other heating explanations\",\n    \"Panel rated current / overload threshold to formally assess overload if needed\"\n  ],\n  \"recommended_actions_for_qualified_personnel_only\": [\n    \"Have qualified maintenance personnel perform de-energized or appropriately guarded inspection per site procedures, including thermal scan for localized hotspots\",\n    \"Check connection tightness, discoloration, and thermal pattern without bypassing protective systems\",\n    \"Continue temperature monitoring to confirm trend\",\n    \"GridProbe decision support only - not a certified electrical safety diagnosis\"\n  ]\n}\n",
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 19,
+            "kind": "MODEL_RESPONSE",
+            "phase": "FINALIZATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "{\"confidence\": 0.45,\"evidence_ids\": [\"EV-001\",\"EV-002\",\"EV-003\",\"EV-004\",\"EV-005\",\"EV-006\"],\"likely_fault\": \"unknown\",\"missing_evidence\": [\"Localized thermal imaging or hotspot localization to distinguish terminal-specific heating from general panel heating\",\"Visual inspection finding by qualified personnel for connection defect such as discoloration, pitting, loose hardware, or torque check result\",\"Documented connection-specific maintenance finding or other independent observation distinguishing connection cause\",\"Panel rated current and overload threshold to formally assess overload\"],\"reasoning_summary\": \"Heating is established by 67.0C with +6.28C/60min rise (EV-002) and history showing 60.7-61.4C stable then sharp rise to 67C (EV-004). Currents are balanced at 0.93% imbalance (EV-001) with stable current (EV-005) and stable voltage (EV-006), which argues against phase imbalance but does not prove a connection defect. No discriminating connection-specific evidence exists and absence of prior alerts (EV-003) is not connection-specific. Cause of heating therefore remains undistinguished.\",\"recommended_inspection\": \"For qualified maintenance personnel only: perform thermal scan for localized hotspot versus general heating and visual check of terminals for discoloration or looseness per site safe procedures without bypassing protection, and continue temperature monitoring. GridProbe is decision support only, not certified safety diagnosis.\",\"risk_level\": \"HIGH\",\"status\": \"NEEDS_MORE_EVIDENCE\"}",
+            "evidence_ids_added": [],
+            "error": null
+          }
+        ],
+        "evidence": [
+          {
+            "id": "EV-001",
+            "source": "DETERMINISTIC_ANALYSIS",
+            "type": "PHASE_IMBALANCE",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Phase-current imbalance calculated from the maximum deviation from the mean.",
+            "value": 0.927326058044424,
+            "unit": "percent",
+            "tool_name": "calculate_phase_imbalance",
+            "reliability": 1.0,
+            "metadata": {
+              "most_deviant_phase": "B",
+              "average_current": 18.296333333333333,
+              "max_deviation": 0.16966666666666796,
+              "panel_id": "GP-104"
+            }
+          },
+          {
+            "id": "EV-002",
+            "source": "HISTORY",
+            "type": "TEMPERATURE_TREND",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Signed temperature change calculated from chronological endpoint measurements.",
+            "value": 6.2819999999999965,
+            "unit": "celsius",
+            "tool_name": "calculate_temperature_trend",
+            "reliability": 1.0,
+            "metadata": {
+              "start_temperature": 60.718,
+              "end_temperature": 67.0,
+              "duration_minutes": 60.0,
+              "rate_per_minute": 0.10469999999999995,
+              "panel_id": "GP-104",
+              "requested_minutes": 60.0
+            }
+          },
+          {
+            "id": "EV-003",
+            "source": "MAINTENANCE_CONTEXT",
+            "type": "MAINTENANCE_NOTE",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved recorded maintenance context.",
+            "value": "No unresolved alerts were listed at the last inspection.",
+            "unit": null,
+            "tool_name": "get_maintenance_context",
+            "reliability": 1.0,
+            "metadata": {
+              "last_inspection_date": "2026-10-14",
+              "known_previous_alerts": [],
+              "recent_maintenance_note": "No unresolved alerts were listed at the last inspection.",
+              "panel_id": "GP-104"
+            }
+          },
+          {
+            "id": "EV-004",
+            "source": "HISTORY",
+            "type": "TEMPERATURE_HISTORY",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved 6 timestamped measurements for temperature.",
+            "value": null,
+            "unit": "celsius",
+            "tool_name": "get_sensor_history",
+            "reliability": 1.0,
+            "metadata": {
+              "panel_id": "GP-104",
+              "sensor": "temperature",
+              "requested_minutes": 60.0,
+              "first_value": 60.718,
+              "last_value": 61.404,
+              "minimum_value": 60.718,
+              "maximum_value": 61.404,
+              "number_of_points": 6,
+              "start_timestamp": "2026-11-04T08:00:00+03:00",
+              "end_timestamp": "2026-11-04T08:50:00+03:00",
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 60.718
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 61.091
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 60.88
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 61.172
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 61.193
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 61.404
+                }
+              ]
+            }
+          },
+          {
+            "id": "EV-005",
+            "source": "HISTORY",
+            "type": "CURRENT_HISTORY",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved 6 timestamped measurements for current_a.",
+            "value": null,
+            "unit": "amperes",
+            "tool_name": "get_sensor_history",
+            "reliability": 1.0,
+            "metadata": {
+              "panel_id": "GP-104",
+              "sensor": "current_a",
+              "requested_minutes": 60.0,
+              "first_value": 18.038,
+              "last_value": 18.14,
+              "minimum_value": 18.038,
+              "maximum_value": 18.14,
+              "number_of_points": 6,
+              "start_timestamp": "2026-11-04T08:00:00+03:00",
+              "end_timestamp": "2026-11-04T08:50:00+03:00",
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 18.038
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 18.14
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 18.038
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 18.14
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 18.14
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 18.14
+                }
+              ]
+            }
+          },
+          {
+            "id": "EV-006",
+            "source": "HISTORY",
+            "type": "VOLTAGE_HISTORY",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved 6 timestamped measurements for voltage_a.",
+            "value": null,
+            "unit": "volts",
+            "tool_name": "get_sensor_history",
+            "reliability": 1.0,
+            "metadata": {
+              "panel_id": "GP-104",
+              "sensor": "voltage_a",
+              "requested_minutes": 60.0,
+              "first_value": 230.79,
+              "last_value": 230.745,
+              "minimum_value": 230.701,
+              "maximum_value": 230.834,
+              "number_of_points": 6,
+              "start_timestamp": "2026-11-04T08:00:00+03:00",
+              "end_timestamp": "2026-11-04T08:50:00+03:00",
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 230.79
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 230.701
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 230.812
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 230.723
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 230.834
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 230.745
+                }
+              ]
+            }
+          }
+        ],
+        "diagnosis": {
+          "status": "NEEDS_MORE_EVIDENCE",
+          "likely_fault": "unknown",
+          "risk_level": "HIGH",
+          "confidence": 0.45,
+          "evidence_ids": [
+            "EV-001",
+            "EV-002",
+            "EV-003",
+            "EV-004",
+            "EV-005",
+            "EV-006"
+          ],
+          "reasoning_summary": "Heating is established by 67.0C with +6.28C/60min rise (EV-002) and history showing 60.7-61.4C stable then sharp rise to 67C (EV-004). Currents are balanced at 0.93% imbalance (EV-001) with stable current (EV-005) and stable voltage (EV-006), which argues against phase imbalance but does not prove a connection defect. No discriminating connection-specific evidence exists and absence of prior alerts (EV-003) is not connection-specific. Cause of heating therefore remains undistinguished.",
+          "recommended_inspection": "For qualified maintenance personnel only: perform thermal scan for localized hotspot versus general heating and visual check of terminals for discoloration or looseness per site safe procedures without bypassing protection, and continue temperature monitoring. GridProbe is decision support only, not certified safety diagnosis.",
+          "missing_evidence": [
+            "Localized thermal imaging or hotspot localization to distinguish terminal-specific heating from general panel heating",
+            "Visual inspection finding by qualified personnel for connection defect such as discoloration, pitting, loose hardware, or torque check result",
+            "Documented connection-specific maintenance finding or other independent observation distinguishing connection cause",
+            "Panel rated current and overload threshold to formally assess overload"
+          ]
+        },
+        "usage": {
+          "request_count": 5,
+          "requests_with_usage": 5,
+          "input_tokens": 15764,
+          "output_tokens": 5435,
+          "total_tokens": 21199,
+          "reasoning_tokens": 3733
+        },
+        "termination_reason": "NATURAL_STOP",
+        "termination_error": null
+      },
+      "error": null,
+      "exact_diagnosis_correct": null,
+      "abstention_correct": true,
+      "unnecessary_diagnosis": false,
+      "valid_evidence_references": 6,
+      "total_evidence_references": 6,
+      "tool_call_count": 7,
+      "attempt_count": 1,
+      "attempt_errors": []
+    },
+    {
+      "case_id": "EVAL-008",
+      "panel_id": "GP-108",
+      "hidden_ground_truth": "normal_or_insufficient",
+      "investigation": {
+        "case_id": "EVAL-008",
+        "panel_id": "GP-108",
+        "trace": [
+          {
+            "step_number": 1,
+            "kind": "MODEL_RESPONSE",
+            "phase": "INVESTIGATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "Starting the investigation — I'll gather the electrical evidence needed for a traceable diagnosis.",
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 2,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_current_snapshot",
+            "tool_call_id": "call_cbc48ca4-13f7-4c5b-a3ee-522278bb4cee",
+            "tool_arguments": {
+              "panel_id": "GP-108"
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 3,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_current_snapshot",
+            "tool_call_id": "call_cbc48ca4-13f7-4c5b-a3ee-522278bb4cee",
+            "tool_arguments": {
+              "panel_id": "GP-108"
+            },
+            "tool_result": {
+              "timestamp": "2026-11-04T09:00:00+03:00",
+              "voltage_a": 231.276,
+              "voltage_b": 231.246,
+              "voltage_c": 231.516,
+              "current_a": 17.658,
+              "current_b": 17.975,
+              "current_c": 17.798,
+              "temperature": 60.495
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 4,
+            "kind": "MODEL_RESPONSE",
+            "phase": "INVESTIGATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "Snapshot shows elevated temperature with stable readings; I'll verify phase balance and temperature evolution.",
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 5,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "calculate_phase_imbalance",
+            "tool_call_id": "call_6cef9421-8853-4d83-aa8c-66a8aa618fe1",
+            "tool_arguments": {
+              "panel_id": "GP-108"
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 6,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "calculate_phase_imbalance",
+            "tool_call_id": "call_6cef9421-8853-4d83-aa8c-66a8aa618fe1",
+            "tool_arguments": {
+              "panel_id": "GP-108"
+            },
+            "tool_result": {
+              "average_current": 17.810333333333332,
+              "max_deviation": 0.16466666666666896,
+              "imbalance_percent": 0.9245569051674251,
+              "most_deviant_phase": "B"
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-001"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 7,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "calculate_temperature_trend",
+            "tool_call_id": "call_3456fd28-3486-4ce0-a498-15e600ef0aad",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 8,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "calculate_temperature_trend",
+            "tool_call_id": "call_3456fd28-3486-4ce0-a498-15e600ef0aad",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "start_temperature": 54.244,
+              "end_temperature": 60.495,
+              "temperature_change": 6.250999999999998,
+              "duration_minutes": 60.0,
+              "rate_per_minute": 0.1041833333333333
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-002"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 9,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_maintenance_context",
+            "tool_call_id": "call_7a419c7d-4dee-4820-819c-3a78e32a6e4f",
+            "tool_arguments": {
+              "panel_id": "GP-108"
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 10,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_maintenance_context",
+            "tool_call_id": "call_7a419c7d-4dee-4820-819c-3a78e32a6e4f",
+            "tool_arguments": {
+              "panel_id": "GP-108"
+            },
+            "tool_result": {
+              "last_inspection_date": "2026-10-18",
+              "known_previous_alerts": [],
+              "recent_maintenance_note": null
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-003"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 11,
+            "kind": "MODEL_RESPONSE",
+            "phase": "INVESTIGATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "Initial checks show balanced load with rising temperature and no prior alerts; I'll review recent history to confirm the pattern.",
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 12,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_3aa2331f-ca87-4374-a377-8bb1c44c0cab",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "current_a",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 13,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_3aa2331f-ca87-4374-a377-8bb1c44c0cab",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "current_a",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "panel_id": "GP-108",
+              "sensor": "current_a",
+              "minutes": 60.0,
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 17.559
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 17.658
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 17.559
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 17.658
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 17.658
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 17.658
+                }
+              ]
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-004"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 14,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_3309dd5a-42f9-4d9c-9c96-108022b3cde3",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "current_b",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 15,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_3309dd5a-42f9-4d9c-9c96-108022b3cde3",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "current_b",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "panel_id": "GP-108",
+              "sensor": "current_b",
+              "minutes": 60.0,
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 17.876
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 17.876
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 17.975
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 17.876
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 17.975
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 17.876
+                }
+              ]
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-005"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 16,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_f64f6cbc-f1f8-4b24-be8c-8659bd23c31f",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "current_c",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 17,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_f64f6cbc-f1f8-4b24-be8c-8659bd23c31f",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "current_c",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "panel_id": "GP-108",
+              "sensor": "current_c",
+              "minutes": 60.0,
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 17.7
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 17.798
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 17.7
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 17.798
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 17.798
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 17.798
+                }
+              ]
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-006"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 18,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_36b5c4b8-392a-48ea-8877-332a592da6b7",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "temperature",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 19,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_36b5c4b8-392a-48ea-8877-332a592da6b7",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "temperature",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "panel_id": "GP-108",
+              "sensor": "temperature",
+              "minutes": 60.0,
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 54.244
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 54.615
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 54.405
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 54.696
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 54.716
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 54.927
+                }
+              ]
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-007"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 20,
+            "kind": "TOOL_CALL",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_708e1647-34b9-4898-a7d6-2ba118c938ce",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "voltage_a",
+              "minutes": 60.0
+            },
+            "tool_result": null,
+            "assistant_content": null,
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 21,
+            "kind": "TOOL_RESULT",
+            "phase": "INVESTIGATION",
+            "tool_name": "get_sensor_history",
+            "tool_call_id": "call_708e1647-34b9-4898-a7d6-2ba118c938ce",
+            "tool_arguments": {
+              "panel_id": "GP-108",
+              "sensor": "voltage_a",
+              "minutes": 60.0
+            },
+            "tool_result": {
+              "panel_id": "GP-108",
+              "sensor": "voltage_a",
+              "minutes": 60.0,
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 231.31
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 231.221
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 231.332
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 231.243
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 231.354
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 231.265
+                }
+              ]
+            },
+            "assistant_content": null,
+            "evidence_ids_added": [
+              "EV-008"
+            ],
+            "error": null
+          },
+          {
+            "step_number": 22,
+            "kind": "MODEL_RESPONSE",
+            "phase": "INVESTIGATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "{\n  \"case_id\": \"EVAL-008\",\n  \"panel_id\": \"GP-108\",\n  \"status\": \"NEEDS_MORE_EVIDENCE\",\n  \"fault\": \"unknown\",\n  \"evidence_used\": [\n    \"EV-001\",\n    \"EV-002\",\n    \"EV-003\",\n    \"EV-004\",\n    \"EV-005\",\n    \"EV-006\",\n    \"EV-007\",\n    \"EV-008\"\n  ],\n  \"observations\": {\n    \"current_snapshot_temperature_C\": 60.495,\n    \"phase_imbalance_percent\": 0.9245569051674251,\n    \"temperature_change_C_60min\": 6.250999999999998,\n    \"currents_stable\": true,\n    \"voltage_stable\": true\n  },\n  \"interpretation\": \"Heating is established but cause is not distinguished. EV-001 shows balanced currents at 0.92% imbalance, not supporting phase_imbalance. EV-004, EV-005, EV-006 show stable currents over 60 min (~17.56-17.97 A) with no rise correlating with temperature, not supporting overload as the driver, though rated capacity is unknown. EV-002 shows +6.25C rise in 60 min from 54.244 to 60.495. EV-007 details the pattern: 54.244 at 08:00 to 54.927 at 08:50 followed by 60.495 at 09:00, i.e. gradual rise then abrupt +5.57C jump in last 10 min. This is acknowledged as an abrupt component within the overall rise. EV-008 plus snapshot voltages 231.276/231.246/231.516 V show stable, balanced voltage. EV-003 shows no previous alerts and no maintenance note, providing no connection-specific history. Per connection-sufficiency policy, elevated temperature + rise + balanced currents + stable voltage, even in combination, establish heating but do not uniquely establish a connection-related cause, and lack of support for overload/phase imbalance is not affirmative evidence of a connection defect. No discriminating connection-specific evidence exists.\",\n  \"missing_evidence\": [\n    \"localized thermal imaging or hotspot location distinguishing a connection point from general panel heating\",\n    \"qualified visual inspection observation for discoloration, loose hardware, or localized heating at terminals/bus\",\n    \"documented connection-specific maintenance finding relevant to GP-108\"\n  ],\n  \"recommended_actions_for_qualified_personnel\": [\n    \"Prioritize qualified on-site inspection of GP-108 due to abrupt temperature increase to 60.495C\",\n    \"Obtain localized thermal image to determine if heating is localized to a connection versus generalized\",\n    \"Visually inspect connections for signs requiring further evaluation, without disturbing energized equipment unless qualified and authorized\",\n    \"Continue temperature and current monitoring to confirm persistence of trend\"\n  ],\n  \"safety_note\": \"Guidance is for qualified maintenance personnel only. Do not manipulate energized equipment if unqualified. Do not bypass protective systems. This is decision-support, not certified electrical safety diagnosis.\"\n}\n",
+            "evidence_ids_added": [],
+            "error": null
+          },
+          {
+            "step_number": 23,
+            "kind": "MODEL_RESPONSE",
+            "phase": "FINALIZATION",
+            "tool_name": null,
+            "tool_call_id": null,
+            "tool_arguments": null,
+            "tool_result": null,
+            "assistant_content": "{\n  \"confidence\": 0.35,\n  \"evidence_ids\": [\n    \"EV-001\",\n    \"EV-002\",\n    \"EV-003\",\n    \"EV-004\",\n    \"EV-005\",\n    \"EV-006\",\n    \"EV-007\",\n    \"EV-008\"\n  ],\n  \"likely_fault\": \"unknown\",\n  \"missing_evidence\": [\n    \"localized thermal imaging or hotspot location distinguishing a connection point from general panel heating\",\n    \"qualified visual inspection observation for discoloration, loose hardware, or localized heating at terminals/bus\",\n    \"documented connection-specific maintenance finding relevant to GP-108\"\n  ],\n  \"reasoning_summary\": \"Heating is established: 60.495C with +6.25C rise in 60 min (54.244 to 60.495). History shows gradual rise to 54.927 at 08:50 then abrupt +5.57C jump to 60.495 at 09:00. Currents are balanced (0.92% imbalance) and stable at ~17.6-18.0A with no rise correlating with temperature, not supporting overload or phase imbalance as driver. Voltage is stable and balanced near 231V. No connection-specific maintenance history or alerts. Balanced currents, stable voltage, and temperature rise alone establish heating but do not uniquely establish connection-related cause per sufficiency rule.\",\n  \"recommended_inspection\": \"For qualified maintenance personnel only: prioritize on-site inspection of GP-108 due to elevated temperature and abrupt rise; obtain localized thermal imaging to determine if heating is localized to a connection versus generalized; visually inspect connections for signs requiring further evaluation without disturbing energized equipment unless qualified and authorized; continue temperature and current monitoring to confirm persistence.\",\n  \"risk_level\": \"HIGH\",\n  \"status\": \"NEEDS_MORE_EVIDENCE\"\n}",
+            "evidence_ids_added": [],
+            "error": null
+          }
+        ],
+        "evidence": [
+          {
+            "id": "EV-001",
+            "source": "DETERMINISTIC_ANALYSIS",
+            "type": "PHASE_IMBALANCE",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Phase-current imbalance calculated from the maximum deviation from the mean.",
+            "value": 0.9245569051674251,
+            "unit": "percent",
+            "tool_name": "calculate_phase_imbalance",
+            "reliability": 1.0,
+            "metadata": {
+              "most_deviant_phase": "B",
+              "average_current": 17.810333333333332,
+              "max_deviation": 0.16466666666666896,
+              "panel_id": "GP-108"
+            }
+          },
+          {
+            "id": "EV-002",
+            "source": "HISTORY",
+            "type": "TEMPERATURE_TREND",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Signed temperature change calculated from chronological endpoint measurements.",
+            "value": 6.250999999999998,
+            "unit": "celsius",
+            "tool_name": "calculate_temperature_trend",
+            "reliability": 1.0,
+            "metadata": {
+              "start_temperature": 54.244,
+              "end_temperature": 60.495,
+              "duration_minutes": 60.0,
+              "rate_per_minute": 0.1041833333333333,
+              "panel_id": "GP-108",
+              "requested_minutes": 60.0
+            }
+          },
+          {
+            "id": "EV-003",
+            "source": "MAINTENANCE_CONTEXT",
+            "type": "MAINTENANCE_NOTE",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved recorded maintenance context.",
+            "value": null,
+            "unit": null,
+            "tool_name": "get_maintenance_context",
+            "reliability": 1.0,
+            "metadata": {
+              "last_inspection_date": "2026-10-18",
+              "known_previous_alerts": [],
+              "recent_maintenance_note": null,
+              "panel_id": "GP-108"
+            }
+          },
+          {
+            "id": "EV-004",
+            "source": "HISTORY",
+            "type": "CURRENT_HISTORY",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved 6 timestamped measurements for current_a.",
+            "value": null,
+            "unit": "amperes",
+            "tool_name": "get_sensor_history",
+            "reliability": 1.0,
+            "metadata": {
+              "panel_id": "GP-108",
+              "sensor": "current_a",
+              "requested_minutes": 60.0,
+              "first_value": 17.559,
+              "last_value": 17.658,
+              "minimum_value": 17.559,
+              "maximum_value": 17.658,
+              "number_of_points": 6,
+              "start_timestamp": "2026-11-04T08:00:00+03:00",
+              "end_timestamp": "2026-11-04T08:50:00+03:00",
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 17.559
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 17.658
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 17.559
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 17.658
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 17.658
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 17.658
+                }
+              ]
+            }
+          },
+          {
+            "id": "EV-005",
+            "source": "HISTORY",
+            "type": "CURRENT_HISTORY",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved 6 timestamped measurements for current_b.",
+            "value": null,
+            "unit": "amperes",
+            "tool_name": "get_sensor_history",
+            "reliability": 1.0,
+            "metadata": {
+              "panel_id": "GP-108",
+              "sensor": "current_b",
+              "requested_minutes": 60.0,
+              "first_value": 17.876,
+              "last_value": 17.876,
+              "minimum_value": 17.876,
+              "maximum_value": 17.975,
+              "number_of_points": 6,
+              "start_timestamp": "2026-11-04T08:00:00+03:00",
+              "end_timestamp": "2026-11-04T08:50:00+03:00",
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 17.876
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 17.876
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 17.975
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 17.876
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 17.975
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 17.876
+                }
+              ]
+            }
+          },
+          {
+            "id": "EV-006",
+            "source": "HISTORY",
+            "type": "CURRENT_HISTORY",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved 6 timestamped measurements for current_c.",
+            "value": null,
+            "unit": "amperes",
+            "tool_name": "get_sensor_history",
+            "reliability": 1.0,
+            "metadata": {
+              "panel_id": "GP-108",
+              "sensor": "current_c",
+              "requested_minutes": 60.0,
+              "first_value": 17.7,
+              "last_value": 17.798,
+              "minimum_value": 17.7,
+              "maximum_value": 17.798,
+              "number_of_points": 6,
+              "start_timestamp": "2026-11-04T08:00:00+03:00",
+              "end_timestamp": "2026-11-04T08:50:00+03:00",
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 17.7
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 17.798
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 17.7
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 17.798
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 17.798
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 17.798
+                }
+              ]
+            }
+          },
+          {
+            "id": "EV-007",
+            "source": "HISTORY",
+            "type": "TEMPERATURE_HISTORY",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved 6 timestamped measurements for temperature.",
+            "value": null,
+            "unit": "celsius",
+            "tool_name": "get_sensor_history",
+            "reliability": 1.0,
+            "metadata": {
+              "panel_id": "GP-108",
+              "sensor": "temperature",
+              "requested_minutes": 60.0,
+              "first_value": 54.244,
+              "last_value": 54.927,
+              "minimum_value": 54.244,
+              "maximum_value": 54.927,
+              "number_of_points": 6,
+              "start_timestamp": "2026-11-04T08:00:00+03:00",
+              "end_timestamp": "2026-11-04T08:50:00+03:00",
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 54.244
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 54.615
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 54.405
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 54.696
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 54.716
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 54.927
+                }
+              ]
+            }
+          },
+          {
+            "id": "EV-008",
+            "source": "HISTORY",
+            "type": "VOLTAGE_HISTORY",
+            "timestamp": "2026-11-04T09:00:00+03:00",
+            "summary": "Retrieved 6 timestamped measurements for voltage_a.",
+            "value": null,
+            "unit": "volts",
+            "tool_name": "get_sensor_history",
+            "reliability": 1.0,
+            "metadata": {
+              "panel_id": "GP-108",
+              "sensor": "voltage_a",
+              "requested_minutes": 60.0,
+              "first_value": 231.31,
+              "last_value": 231.265,
+              "minimum_value": 231.221,
+              "maximum_value": 231.354,
+              "number_of_points": 6,
+              "start_timestamp": "2026-11-04T08:00:00+03:00",
+              "end_timestamp": "2026-11-04T08:50:00+03:00",
+              "points": [
+                {
+                  "timestamp": "2026-11-04T08:00:00+03:00",
+                  "value": 231.31
+                },
+                {
+                  "timestamp": "2026-11-04T08:10:00+03:00",
+                  "value": 231.221
+                },
+                {
+                  "timestamp": "2026-11-04T08:20:00+03:00",
+                  "value": 231.332
+                },
+                {
+                  "timestamp": "2026-11-04T08:30:00+03:00",
+                  "value": 231.243
+                },
+                {
+                  "timestamp": "2026-11-04T08:40:00+03:00",
+                  "value": 231.354
+                },
+                {
+                  "timestamp": "2026-11-04T08:50:00+03:00",
+                  "value": 231.265
+                }
+              ]
+            }
+          }
+        ],
+        "diagnosis": {
+          "status": "NEEDS_MORE_EVIDENCE",
+          "likely_fault": "unknown",
+          "risk_level": "HIGH",
+          "confidence": 0.35,
+          "evidence_ids": [
+            "EV-001",
+            "EV-002",
+            "EV-003",
+            "EV-004",
+            "EV-005",
+            "EV-006",
+            "EV-007",
+            "EV-008"
+          ],
+          "reasoning_summary": "Heating is established: 60.495C with +6.25C rise in 60 min (54.244 to 60.495). History shows gradual rise to 54.927 at 08:50 then abrupt +5.57C jump to 60.495 at 09:00. Currents are balanced (0.92% imbalance) and stable at ~17.6-18.0A with no rise correlating with temperature, not supporting overload or phase imbalance as driver. Voltage is stable and balanced near 231V. No connection-specific maintenance history or alerts. Balanced currents, stable voltage, and temperature rise alone establish heating but do not uniquely establish connection-related cause per sufficiency rule.",
+          "recommended_inspection": "For qualified maintenance personnel only: prioritize on-site inspection of GP-108 due to elevated temperature and abrupt rise; obtain localized thermal imaging to determine if heating is localized to a connection versus generalized; visually inspect connections for signs requiring further evaluation without disturbing energized equipment unless qualified and authorized; continue temperature and current monitoring to confirm persistence.",
+          "missing_evidence": [
+            "localized thermal imaging or hotspot location distinguishing a connection point from general panel heating",
+            "qualified visual inspection observation for discoloration, loose hardware, or localized heating at terminals/bus",
+            "documented connection-specific maintenance finding relevant to GP-108"
+          ]
+        },
+        "usage": {
+          "request_count": 5,
+          "requests_with_usage": 5,
+          "input_tokens": 17585,
+          "output_tokens": 5205,
+          "total_tokens": 22790,
+          "reasoning_tokens": 3420
+        },
+        "termination_reason": "NATURAL_STOP",
+        "termination_error": null
+      },
+      "error": null,
+      "exact_diagnosis_correct": null,
+      "abstention_correct": true,
+      "unnecessary_diagnosis": false,
+      "valid_evidence_references": 8,
+      "total_evidence_references": 8,
+      "tool_call_count": 9,
+      "attempt_count": 1,
+      "attempt_errors": []
+    }
+  ]
+}
